@@ -1001,8 +1001,8 @@ COACHING RECOMMENDATION:
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6",
-            max_tokens: 2048,
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1024,
             system: ANALYSIS_INSTRUCTIONS,
             messages: [{ role: "user", content: `Here is the call transcript to analyze:\n\n${call.transcript}` }],
           }),
