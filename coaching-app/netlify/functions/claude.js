@@ -21,7 +21,20 @@ exports.handler = async (event) => {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return {
+        statusCode: 502,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({ error: "Invalid response from API", status: response.status }),
+      };
+    }
 
     return {
       statusCode: response.status,
