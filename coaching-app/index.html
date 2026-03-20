@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coaching File – AI-Powered Session Notes</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #e2e5ea;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --text: #1e1e2e;
+      --text-muted: #6b7280;
+      --accent: #eef2ff;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .sidebar-header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn-new-client {
+      margin: 16px 20px;
+      padding: 10px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-new-client:hover { background: var(--primary-hover); }
+
+    .client-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+    }
+
+    .client-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      transition: background 0.1s;
+    }
+
+    .client-item:hover { background: var(--accent); }
+    .client-item.active { background: var(--accent); font-weight: 600; }
+
+    .client-item .delete-btn {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+    }
+
+    .client-item:hover .delete-btn { opacity: 1; }
+
+    /* Main area */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .main-header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .main-header h2 { font-size: 20px; font-weight: 700; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .tab {
+      padding: 6px 16px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    /* Content panels */
+    .content { flex: 1; overflow-y: auto; padding: 24px 32px; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      text-align: center;
+      gap: 12px;
+    }
+
+    .empty-state .icon { font-size: 48px; opacity: 0.3; }
+
+    /* Session notes */
+    .session-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .session-form h3 { font-size: 15px; margin-bottom: 12px; }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .form-group textarea { min-height: 80px; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+
+    .btn {
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Session cards */
+    .session-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    .session-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .session-card-header .date { font-weight: 600; font-size: 14px; }
+
+    .session-card-header .mood {
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: var(--primary);
+    }
+
+    .session-card p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 6px; }
+    .session-card strong { color: var(--text); }
+
+    .session-card .delete-session {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 4px;
+      opacity: 0.6;
+    }
+
+    .session-card .delete-session:hover { opacity: 1; }
+
+    /* AI insights panel */
+    .ai-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .ai-panel h3 { font-size: 15px; margin-bottom: 12px; }
+
+    .ai-prompt-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .ai-prompt-row select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .ai-result {
+      background: var(--accent);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      min-height: 60px;
+      color: var(--text);
+    }
+
+    .ai-result.loading { color: var(--text-muted); font-style: italic; }
+
+    /* Goals panel */
+    .goal-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .goal-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .goal-item.completed .goal-text { text-decoration: line-through; color: var(--text-muted); }
+    .goal-text { flex: 1; font-size: 14px; }
+
+    .goal-item .delete-goal {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 14px;
+      opacity: 0.5;
+    }
+
+    .goal-item .delete-goal:hover { opacity: 1; }
+
+    .add-goal-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .add-goal-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+      .client-list { max-height: 150px; }
+      .main { height: calc(100vh - 200px); }
+      .content { padding: 16px; }
+      .form-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>Coaching File</h1>
+      <p>AI-powered session management</p>
+    </div>
+    <button class="btn-new-client" onclick="addClient()">+ New Client</button>
+    <div class="client-list" id="clientList"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div id="mainHeader" class="main-header" style="display:none;">
+      <h2 id="clientName"></h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="sessions" onclick="switchTab('sessions', this)">Sessions</button>
+        <button class="tab" data-tab="goals" onclick="switchTab('goals', this)">Goals</button>
+        <button class="tab" data-tab="insights" onclick="switchTab('insights', this)">AI Insights</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="empty-state">
+        <div class="icon">&#128203;</div>
+        <h3>Select or create a client</h3>
+        <p>Your coaching sessions and AI-powered insights will appear here.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- Data Store (localStorage) ---
+    const STORAGE_KEY = "coaching_file_data";
+
+    function loadData() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { clients: [] };
+      } catch { return { clients: [] }; }
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    let data = loadData();
+    let activeClientId = null;
+    let activeTab = "sessions";
+
+    // --- Client Management ---
+    function addClient() {
+      const name = prompt("Client name:");
+      if (!name || !name.trim()) return;
+      const client = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        sessions: [],
+        goals: [],
+      };
+      data.clients.push(client);
+      saveData(data);
+      renderClientList();
+      selectClient(client.id);
+    }
+
+    function deleteClient(id, e) {
+      e.stopPropagation();
+      if (!confirm("Delete this client and all their data?")) return;
+      data.clients = data.clients.filter(c => c.id !== id);
+      saveData(data);
+      if (activeClientId === id) {
+        activeClientId = null;
+        renderMain();
+      }
+      renderClientList();
+    }
+
+    function selectClient(id) {
+      activeClientId = id;
+      activeTab = "sessions";
+      renderClientList();
+      renderMain();
+    }
+
+    function getClient() {
+      return data.clients.find(c => c.id === activeClientId);
+    }
+
+    // --- Rendering ---
+    function renderClientList() {
+      const el = document.getElementById("clientList");
+      el.innerHTML = data.clients.map(c => `
+        <div class="client-item ${c.id === activeClientId ? 'active' : ''}" onclick="selectClient('${c.id}')">
+          <span>${esc(c.name)}</span>
+          <button class="delete-btn" onclick="deleteClient('${c.id}', event)" title="Delete">&times;</button>
+        </div>
+      `).join("");
+    }
+
+    function renderMain() {
+      const header = document.getElementById("mainHeader");
+      const content = document.getElementById("content");
+      const client = getClient();
+
+      if (!client) {
+        header.style.display = "none";
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">&#128203;</div>
+            <h3>Select or create a client</h3>
+            <p>Your coaching sessions and AI-powered insights will appear here.</p>
+          </div>`;
+        return;
+      }
+
+      header.style.display = "flex";
+      document.getElementById("clientName").textContent = client.name;
+
+      // Reset active tab button
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === activeTab));
+
+      if (activeTab === "sessions") renderSessions(client, content);
+      else if (activeTab === "goals") renderGoals(client, content);
+      else if (activeTab === "insights") renderInsights(client, content);
+    }
+
+    function renderSessions(client, el) {
+      const today = new Date().toISOString().slice(0, 10);
+      el.innerHTML = `
+        <div class="session-form">
+          <h3>New Session Note</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="sessDate" value="${today}" />
+            </div>
+            <div class="form-group">
+              <label>Mood / Energy</label>
+              <select id="sessMood">
+                <option value="High energy">High energy</option>
+                <option value="Positive">Positive</option>
+                <option value="Neutral" selected>Neutral</option>
+                <option value="Low energy">Low energy</option>
+                <option value="Stressed">Stressed</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Session Notes</label>
+            <textarea id="sessNotes" placeholder="What was discussed? Key takeaways, action items, breakthroughs..."></textarea>
+          </div>
+          <div class="form-group" style="margin-top:8px;">
+            <label>Homework / Action Items</label>
+            <textarea id="sessHomework" placeholder="Tasks assigned for next session..." style="min-height:50px;"></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="addSession()">Save Session</button>
+          </div>
+        </div>
+        <div id="sessionList"></div>
+      `;
+      renderSessionList(client);
+    }
+
+    function renderSessionList(client) {
+      const el = document.getElementById("sessionList");
+      if (!el) return;
+      const sessions = [...client.sessions].sort((a, b) => b.date.localeCompare(a.date));
+      if (sessions.length === 0) {
+        el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px;">No sessions yet. Add your first note above.</p>';
+        return;
+      }
+      el.innerHTML = sessions.map(s => `
+        <div class="session-card">
+          <div class="session-card-header">
+            <span class="date">${s.date}</span>
+            <span class="mood">${esc(s.mood)}</span>
+          </div>
+          <p>${esc(s.notes)}</p>
+          ${s.homework ? `<p><strong>Homework:</strong> ${esc(s.homework)}</p>` : ""}
+          <button class="delete-session" onclick="deleteSession('${s.id}')">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    function addSession() {
+      const client = getClient();
+      if (!client) return;
+      const notes = document.getElementById("sessNotes").value.trim();
+      if (!notes) { alert("Please enter session notes."); return; }
+      client.sessions.push({
+        id: Date.now().toString(),
+        date: document.getElementById("sessDate").value,
+        mood: document.getElementById("sessMood").value,
+        notes,
+        homework: document.getElementById("sessHomework").value.trim(),
+      });
+      saveData(data);
+      renderMain();
+    }
+
+    function deleteSession(id) {
+      const client = getClient();
+      if (!client) return;
+      client.sessions = client.sessions.filter(s => s.id !== id);
+      saveData(data);
+      renderSessionList(client);
+    }
+
+    // --- Goals ---
+    function renderGoals(client, el) {
+      el.innerHTML = `
+        <div class="add-goal-row">
+          <input type="text" id="goalInput" placeholder="Add a goal..." onkeydown="if(event.key==='Enter')addGoal()" />
+          <button class="btn btn-primary" onclick="addGoal()">Add</button>
+        </div>
+        <div id="goalList"></div>
+      `;
+      renderGoalList(client);
+    }
+
+    function renderGoalList(client) {
+      const el = document.getElementById("goalList");
+      if (!el) return;
+      if (client.goals.length === 0) {
+        el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px;">No goals yet.</p>';
+        return;
+      }
+      el.innerHTML = client.goals.map(g => `
+        <div class="goal-item ${g.done ? 'completed' : ''}">
+          <input type="checkbox" ${g.done ? 'checked' : ''} onchange="toggleGoal('${g.id}')" />
+          <span class="goal-text">${esc(g.text)}</span>
+          <button class="delete-goal" onclick="deleteGoal('${g.id}')">&times;</button>
+        </div>
+      `).join("");
+    }
+
+    function addGoal() {
+      const client = getClient();
+      if (!client) return;
+      const input = document.getElementById("goalInput");
+      const text = input.value.trim();
+      if (!text) return;
+      client.goals.push({ id: Date.now().toString(), text, done: false });
+      saveData(data);
+      input.value = "";
+      renderGoalList(client);
+    }
+
+    function toggleGoal(id) {
+      const client = getClient();
+      if (!client) return;
+      const goal = client.goals.find(g => g.id === id);
+      if (goal) goal.done = !goal.done;
+      saveData(data);
+      renderGoalList(client);
+    }
+
+    function deleteGoal(id) {
+      const client = getClient();
+      if (!client) return;
+      client.goals = client.goals.filter(g => g.id !== id);
+      saveData(data);
+      renderGoalList(client);
+    }
+
+    // --- AI Insights ---
+    function renderInsights(client, el) {
+      el.innerHTML = `
+        <div class="ai-panel">
+          <h3>AI-Powered Insights</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+            Analyze session notes and get coaching suggestions powered by Claude.
+          </p>
+          <div class="ai-prompt-row">
+            <select id="aiPrompt">
+              <option value="summary">Summarize all sessions</option>
+              <option value="patterns">Identify patterns and themes</option>
+              <option value="progress">Assess progress toward goals</option>
+              <option value="next">Suggest focus areas for next session</option>
+              <option value="strengths">Highlight client strengths</option>
+            </select>
+            <button class="btn btn-primary" id="aiBtn" onclick="runAI()">Generate</button>
+          </div>
+          <div class="ai-result" id="aiResult">Select an analysis type and click Generate.</div>
+        </div>
+      `;
+    }
+
+    async function runAI() {
+      const client = getClient();
+      if (!client) return;
+      if (client.sessions.length === 0) {
+        document.getElementById("aiResult").textContent = "No sessions to analyze. Add session notes first.";
+        return;
+      }
+
+      const promptType = document.getElementById("aiPrompt").value;
+      const btn = document.getElementById("aiBtn");
+      const resultEl = document.getElementById("aiResult");
+
+      btn.disabled = true;
+      resultEl.textContent = "Thinking...";
+      resultEl.classList.add("loading");
+
+      const sessionText = client.sessions
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(s => `[${s.date}] Mood: ${s.mood}\nNotes: ${s.notes}${s.homework ? '\nHomework: ' + s.homework : ''}`)
+        .join("\n\n");
+
+      const goalsText = client.goals.length
+        ? "\n\nGoals:\n" + client.goals.map(g => `- [${g.done ? 'x' : ' '}] ${g.text}`).join("\n")
+        : "";
+
+      const prompts = {
+        summary: "Provide a concise summary of all coaching sessions for this client. Highlight key themes, milestones, and overall trajectory.",
+        patterns: "Analyze the session notes and identify recurring patterns, themes, and behavioral trends. Note any shifts over time.",
+        progress: "Assess the client's progress toward their stated goals based on the session notes. Identify areas of strong progress and areas needing more attention.",
+        next: "Based on the session history, suggest 3-5 specific focus areas or discussion topics for the next coaching session. Explain why each is important.",
+        strengths: "Based on the session notes, identify and highlight the client's key strengths, positive patterns, and areas of growth.",
+      };
+
+      const systemPrompt = `You are an expert coaching assistant. You help coaches analyze their session notes and provide actionable insights. Be specific, reference actual session content, and provide practical suggestions. Keep responses clear and well-structured.`;
+
+      const userMessage = `Client: ${client.name}\n\nSession History:\n${sessionText}${goalsText}\n\nTask: ${prompts[promptType]}`;
+
+      try {
+        const res = await fetch("/api/claude", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: "user", content: userMessage }],
+          }),
+        });
+
+        const json = await res.json();
+
+        if (json.error) {
+          resultEl.textContent = "Error: " + (json.error.message || json.error);
+        } else if (json.content && json.content[0]) {
+          resultEl.textContent = json.content[0].text;
+        } else {
+          resultEl.textContent = "Unexpected response format.";
+        }
+      } catch (err) {
+        resultEl.textContent = "Failed to connect: " + err.message;
+      }
+
+      resultEl.classList.remove("loading");
+      btn.disabled = false;
+    }
+
+    // --- Utilities ---
+    function switchTab(tab, el) {
+      activeTab = tab;
+      renderMain();
+    }
+
+    function esc(str) {
+      const d = document.createElement("div");
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // --- Init ---
+    renderClientList();
+  </script>
+</body>
+</html>
