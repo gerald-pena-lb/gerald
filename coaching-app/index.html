@@ -1008,7 +1008,13 @@ COACHING RECOMMENDATION:
           }),
         });
 
-        const json = await res.json();
+        const text = await res.text();
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          throw new Error(`Server returned status ${res.status}: ${text.substring(0, 200)}`);
+        }
 
         if (json.content && json.content[0]) {
           call.analysis = json.content[0].text;
