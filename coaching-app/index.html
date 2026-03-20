@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coaching File – AI-Powered Session Notes</title>
+  <title>Sales Coaching Dashboard</title>
   <style>
     :root {
-      --bg: #f7f8fa;
+      --bg: #f3f4f6;
       --surface: #ffffff;
-      --border: #e2e5ea;
+      --border: #e5e7eb;
       --primary: #4f46e5;
       --primary-hover: #4338ca;
-      --text: #1e1e2e;
+      --primary-light: #eef2ff;
+      --text: #111827;
       --text-muted: #6b7280;
-      --accent: #eef2ff;
-      --danger: #ef4444;
-      --success: #22c55e;
+      --green: #059669;
+      --green-bg: #ecfdf5;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --yellow: #d97706;
+      --yellow-bg: #fffbeb;
+      --blue: #2563eb;
+      --blue-bg: #eff6ff;
       --radius: 10px;
     }
 
@@ -29,9 +35,9 @@
       display: flex;
     }
 
-    /* Sidebar */
+    /* ── Sidebar ── */
     .sidebar {
-      width: 280px;
+      width: 260px;
       background: var(--surface);
       border-right: 1px solid var(--border);
       display: flex;
@@ -47,41 +53,42 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .sidebar-header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--primary);
-    }
+    .sidebar-header h1 { font-size: 17px; font-weight: 700; color: var(--primary); }
+    .sidebar-header p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-    .sidebar-header p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
+    .sidebar-nav { padding: 12px; }
 
-    .btn-new-client {
-      margin: 16px 20px;
-      padding: 10px;
-      background: var(--primary);
-      color: #fff;
+    .nav-btn {
+      width: 100%;
+      padding: 10px 14px;
       border: none;
-      border-radius: var(--radius);
+      background: transparent;
+      text-align: left;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 500;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.15s;
+      color: var(--text);
+      margin-bottom: 2px;
+      transition: background 0.1s;
     }
 
-    .btn-new-client:hover { background: var(--primary-hover); }
+    .nav-btn:hover { background: var(--bg); }
+    .nav-btn.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
 
-    .client-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 12px;
+    .nav-label {
+      padding: 16px 14px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
     }
 
-    .client-item {
-      padding: 10px 12px;
+    .agent-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+
+    .agent-item {
+      padding: 9px 14px;
       border-radius: 8px;
       cursor: pointer;
       display: flex;
@@ -91,22 +98,39 @@
       transition: background 0.1s;
     }
 
-    .client-item:hover { background: var(--accent); }
-    .client-item.active { background: var(--accent); font-weight: 600; }
+    .agent-item:hover { background: var(--bg); }
+    .agent-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
 
-    .client-item .delete-btn {
+    .agent-item .remove-btn {
       opacity: 0;
       background: none;
       border: none;
-      color: var(--danger);
+      color: var(--red);
       cursor: pointer;
       font-size: 16px;
-      padding: 0 4px;
+      padding: 0 2px;
+      line-height: 1;
     }
 
-    .client-item:hover .delete-btn { opacity: 1; }
+    .agent-item:hover .remove-btn { opacity: 0.6; }
+    .agent-item .remove-btn:hover { opacity: 1; }
 
-    /* Main area */
+    .btn-add-agent {
+      margin: 0 12px 12px;
+      padding: 9px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-add-agent:hover { background: var(--primary-hover); }
+
+    /* ── Main ── */
     .main {
       flex: 1;
       display: flex;
@@ -115,8 +139,8 @@
       overflow: hidden;
     }
 
-    .main-header {
-      padding: 20px 32px;
+    .topbar {
+      padding: 16px 28px;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       display: flex;
@@ -124,33 +148,286 @@
       align-items: center;
     }
 
-    .main-header h2 { font-size: 20px; font-weight: 700; }
+    .topbar h2 { font-size: 18px; font-weight: 700; }
 
-    .tabs {
+    .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+    /* ── Week Filter ── */
+    .week-filter {
       display: flex;
-      gap: 4px;
-      background: var(--bg);
-      padding: 4px;
-      border-radius: 8px;
+      align-items: center;
+      gap: 10px;
     }
 
-    .tab {
-      padding: 6px 16px;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 500;
+    .week-filter label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+    .week-filter input[type="week"],
+    .week-filter select {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    /* ── Stat Cards ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .stat-card .label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .stat-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Agent Table (Dashboard) ── */
+    .agents-table {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+    }
+
+    .agents-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .agents-table td {
+      padding: 12px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .agents-table tr:last-child td { border-bottom: none; }
+
+    .agents-table tr:hover td { background: #f9fafb; }
+
+    .agents-table .name-link {
+      color: var(--primary);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .agents-table .name-link:hover { text-decoration: underline; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+    /* ── Progress Bar ── */
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar .fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    /* ── Agent Profile ── */
+    .profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .profile-header h3 { font-size: 20px; font-weight: 700; }
+    .profile-header .meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    /* ── Upload Area ── */
+    .upload-area {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 24px;
+    }
+
+    .upload-area:hover { border-color: var(--primary); background: var(--primary-light); }
+    .upload-area.dragover { border-color: var(--primary); background: var(--primary-light); }
+    .upload-area .icon { font-size: 36px; color: var(--text-muted); }
+    .upload-area p { font-size: 14px; color: var(--text-muted); margin-top: 8px; }
+    .upload-area .hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Call Cards ── */
+    .call-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+
+    .call-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .call-card-header .date { font-weight: 600; font-size: 14px; }
+
+    .call-card-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    .call-card-toggle:hover { background: var(--primary-light); }
+
+    .call-card .outcome-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .call-card .analysis {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .call-card .transcript-preview {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    .call-card .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .call-card .delete-call {
+      background: none;
+      border: none;
+      color: var(--red);
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    .call-card .delete-call:hover { opacity: 1; }
+
+    /* ── Outcome Selector (modal-style) ── */
+    .outcome-select {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .outcome-btn {
+      padding: 5px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--surface);
+      transition: all 0.1s;
+    }
+
+    .outcome-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .outcome-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--surface);
       transition: all 0.15s;
     }
 
-    .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
 
-    /* Content panels */
-    .content { flex: 1; overflow-y: auto; padding: 24px 32px; }
+    /* ── Loading Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
 
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty State ── */
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -159,198 +436,20 @@
       height: 100%;
       color: var(--text-muted);
       text-align: center;
-      gap: 12px;
-    }
-
-    .empty-state .icon { font-size: 48px; opacity: 0.3; }
-
-    /* Session notes */
-    .session-form {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .session-form h3 { font-size: 15px; margin-bottom: 12px; }
-
-    .form-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-
-    .form-group label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .form-group input, .form-group textarea, .form-group select {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      resize: vertical;
-    }
-
-    .form-group textarea { min-height: 80px; }
-
-    .btn-row { display: flex; gap: 8px; margin-top: 8px; }
-
-    .btn {
-      padding: 8px 18px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      background: var(--surface);
-    }
-
-    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* Session cards */
-    .session-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 12px;
-    }
-
-    .session-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .session-card-header .date { font-weight: 600; font-size: 14px; }
-
-    .session-card-header .mood {
-      font-size: 12px;
-      padding: 2px 10px;
-      border-radius: 12px;
-      background: var(--accent);
-      color: var(--primary);
-    }
-
-    .session-card p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 6px; }
-    .session-card strong { color: var(--text); }
-
-    .session-card .delete-session {
-      background: none;
-      border: none;
-      color: var(--danger);
-      font-size: 12px;
-      cursor: pointer;
-      margin-top: 4px;
-      opacity: 0.6;
-    }
-
-    .session-card .delete-session:hover { opacity: 1; }
-
-    /* AI insights panel */
-    .ai-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-
-    .ai-panel h3 { font-size: 15px; margin-bottom: 12px; }
-
-    .ai-prompt-row {
-      display: flex;
       gap: 8px;
-      margin-bottom: 16px;
     }
 
-    .ai-prompt-row select {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 14px;
-      flex: 1;
-    }
+    .empty-state .icon { font-size: 48px; opacity: 0.25; }
 
-    .ai-result {
-      background: var(--accent);
-      border-radius: 8px;
-      padding: 16px;
-      font-size: 14px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      min-height: 60px;
-      color: var(--text);
-    }
-
-    .ai-result.loading { color: var(--text-muted); font-style: italic; }
-
-    /* Goals panel */
-    .goal-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 18px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .goal-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--primary);
-      cursor: pointer;
-    }
-
-    .goal-item.completed .goal-text { text-decoration: line-through; color: var(--text-muted); }
-    .goal-text { flex: 1; font-size: 14px; }
-
-    .goal-item .delete-goal {
-      background: none;
-      border: none;
-      color: var(--danger);
-      cursor: pointer;
-      font-size: 14px;
-      opacity: 0.5;
-    }
-
-    .goal-item .delete-goal:hover { opacity: 1; }
-
-    .add-goal-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .add-goal-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-
-    /* Responsive */
+    /* ── Responsive ── */
     @media (max-width: 768px) {
       body { flex-direction: column; }
       .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
-      .client-list { max-height: 150px; }
-      .main { height: calc(100vh - 200px); }
+      .agent-list { max-height: 120px; }
+      .main { height: auto; min-height: calc(100vh - 200px); }
       .content { padding: 16px; }
-      .form-row { flex-direction: column; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .profile-stats { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -359,327 +458,543 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>Coaching File</h1>
-      <p>AI-powered session management</p>
+      <h1>Sales Coach</h1>
+      <p>Call Analysis Dashboard</p>
     </div>
-    <button class="btn-new-client" onclick="addClient()">+ New Client</button>
-    <div class="client-list" id="clientList"></div>
+    <div class="sidebar-nav">
+      <button class="nav-btn active" id="navDashboard" onclick="goToDashboard()">Dashboard</button>
+    </div>
+    <div class="nav-label">Agents</div>
+    <div class="agent-list" id="agentList"></div>
+    <button class="btn-add-agent" onclick="addAgent()">+ Add Agent</button>
   </aside>
 
   <!-- Main -->
   <main class="main">
-    <div id="mainHeader" class="main-header" style="display:none;">
-      <h2 id="clientName"></h2>
-      <div class="tabs">
-        <button class="tab active" data-tab="sessions" onclick="switchTab('sessions', this)">Sessions</button>
-        <button class="tab" data-tab="goals" onclick="switchTab('goals', this)">Goals</button>
-        <button class="tab" data-tab="insights" onclick="switchTab('insights', this)">AI Insights</button>
-      </div>
+    <div class="topbar" id="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div id="topbarRight"></div>
     </div>
-
-    <div class="content" id="content">
-      <div class="empty-state">
-        <div class="icon">&#128203;</div>
-        <h3>Select or create a client</h3>
-        <p>Your coaching sessions and AI-powered insights will appear here.</p>
-      </div>
-    </div>
+    <div class="content" id="content"></div>
   </main>
 
+  <!-- Hidden file input -->
+  <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.doc,.docx,.pdf" multiple style="display:none" />
+
   <script>
-    // --- Data Store (localStorage) ---
-    const STORAGE_KEY = "coaching_file_data";
+    // ════════════════════════════════════════
+    //  DATA LAYER
+    // ════════════════════════════════════════
+    const STORAGE_KEY = "sales_coaching_v2";
 
     function loadData() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { clients: [] };
-      } catch { return { clients: [] }; }
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { agents: [] }; }
+      catch { return { agents: [] }; }
     }
 
-    function saveData(data) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
 
     let data = loadData();
-    let activeClientId = null;
-    let activeTab = "sessions";
+    let view = "dashboard"; // "dashboard" | "agent"
+    let activeAgentId = null;
+    let weekFilter = getCurrentWeek();
 
-    // --- Client Management ---
-    function addClient() {
-      const name = prompt("Client name:");
+    function getCurrentWeek() {
+      const d = new Date();
+      const day = d.getDay() || 7;
+      d.setDate(d.getDate() + 4 - day);
+      const year = d.getFullYear();
+      const week = Math.ceil((((d - new Date(year, 0, 1)) / 86400000) + 1) / 7);
+      return `${year}-W${String(week).padStart(2, '0')}`;
+    }
+
+    function getWeekRange(weekStr) {
+      if (!weekStr) return null;
+      const [y, w] = weekStr.split("-W").map(Number);
+      const jan1 = new Date(y, 0, 1);
+      const days = (w - 1) * 7;
+      const start = new Date(jan1);
+      start.setDate(jan1.getDate() + days - ((jan1.getDay() + 6) % 7));
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return { start, end };
+    }
+
+    function filterCallsByWeek(calls, weekStr) {
+      if (!weekStr || weekStr === "all") return calls;
+      const range = getWeekRange(weekStr);
+      if (!range) return calls;
+      return calls.filter(c => {
+        const d = new Date(c.date);
+        return d >= range.start && d <= range.end;
+      });
+    }
+
+    function getAgent(id) { return data.agents.find(a => a.id === id); }
+
+    // ════════════════════════════════════════
+    //  AGENT MANAGEMENT
+    // ════════════════════════════════════════
+    function addAgent() {
+      const name = prompt("Agent name:");
       if (!name || !name.trim()) return;
-      const client = {
+      const agent = {
         id: Date.now().toString(),
         name: name.trim(),
-        sessions: [],
-        goals: [],
+        calls: [],
+        createdAt: new Date().toISOString(),
       };
-      data.clients.push(client);
+      data.agents.push(agent);
       saveData(data);
-      renderClientList();
-      selectClient(client.id);
+      renderSidebar();
+      goToAgent(agent.id);
     }
 
-    function deleteClient(id, e) {
+    function deleteAgent(id, e) {
       e.stopPropagation();
-      if (!confirm("Delete this client and all their data?")) return;
-      data.clients = data.clients.filter(c => c.id !== id);
+      if (!confirm("Delete this agent and all their call data?")) return;
+      data.agents = data.agents.filter(a => a.id !== id);
       saveData(data);
-      if (activeClientId === id) {
-        activeClientId = null;
-        renderMain();
-      }
-      renderClientList();
+      if (activeAgentId === id) goToDashboard();
+      renderSidebar();
     }
 
-    function selectClient(id) {
-      activeClientId = id;
-      activeTab = "sessions";
-      renderClientList();
-      renderMain();
+    // ════════════════════════════════════════
+    //  NAVIGATION
+    // ════════════════════════════════════════
+    function goToDashboard() {
+      view = "dashboard";
+      activeAgentId = null;
+      renderSidebar();
+      render();
     }
 
-    function getClient() {
-      return data.clients.find(c => c.id === activeClientId);
+    function goToAgent(id) {
+      view = "agent";
+      activeAgentId = id;
+      renderSidebar();
+      render();
     }
 
-    // --- Rendering ---
-    function renderClientList() {
-      const el = document.getElementById("clientList");
-      el.innerHTML = data.clients.map(c => `
-        <div class="client-item ${c.id === activeClientId ? 'active' : ''}" onclick="selectClient('${c.id}')">
-          <span>${esc(c.name)}</span>
-          <button class="delete-btn" onclick="deleteClient('${c.id}', event)" title="Delete">&times;</button>
+    // ════════════════════════════════════════
+    //  SIDEBAR
+    // ════════════════════════════════════════
+    function renderSidebar() {
+      document.getElementById("navDashboard").classList.toggle("active", view === "dashboard");
+      const el = document.getElementById("agentList");
+      el.innerHTML = data.agents.map(a => `
+        <div class="agent-item ${a.id === activeAgentId ? 'active' : ''}" onclick="goToAgent('${a.id}')">
+          <span>${esc(a.name)}</span>
+          <button class="remove-btn" onclick="deleteAgent('${a.id}', event)" title="Remove">&times;</button>
         </div>
       `).join("");
     }
 
-    function renderMain() {
-      const header = document.getElementById("mainHeader");
-      const content = document.getElementById("content");
-      const client = getClient();
+    // ════════════════════════════════════════
+    //  MAIN RENDER
+    // ════════════════════════════════════════
+    function render() {
+      if (view === "dashboard") renderDashboard();
+      else renderAgentProfile();
+    }
 
-      if (!client) {
-        header.style.display = "none";
+    // ════════════════════════════════════════
+    //  DASHBOARD VIEW
+    // ════════════════════════════════════════
+    function renderDashboard() {
+      const titleEl = document.getElementById("pageTitle");
+      const rightEl = document.getElementById("topbarRight");
+      const content = document.getElementById("content");
+
+      titleEl.textContent = "Dashboard";
+      rightEl.innerHTML = `
+        <div class="week-filter">
+          <label>Week:</label>
+          <input type="week" id="dashWeek" value="${weekFilter}" onchange="weekFilter=this.value;render()" />
+          <button class="btn btn-sm" onclick="weekFilter='all';document.getElementById('dashWeek').value='';render()">All Time</button>
+        </div>
+      `;
+
+      if (data.agents.length === 0) {
         content.innerHTML = `
           <div class="empty-state">
-            <div class="icon">&#128203;</div>
-            <h3>Select or create a client</h3>
-            <p>Your coaching sessions and AI-powered insights will appear here.</p>
-          </div>`;
+            <div class="icon">&#128101;</div>
+            <h3>No agents yet</h3>
+            <p>Click "+ Add Agent" to get started.</p>
+          </div>
+        `;
         return;
       }
 
-      header.style.display = "flex";
-      document.getElementById("clientName").textContent = client.name;
-
-      // Reset active tab button
-      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === activeTab));
-
-      if (activeTab === "sessions") renderSessions(client, content);
-      else if (activeTab === "goals") renderGoals(client, content);
-      else if (activeTab === "insights") renderInsights(client, content);
-    }
-
-    function renderSessions(client, el) {
-      const today = new Date().toISOString().slice(0, 10);
-      el.innerHTML = `
-        <div class="session-form">
-          <h3>New Session Note</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Date</label>
-              <input type="date" id="sessDate" value="${today}" />
-            </div>
-            <div class="form-group">
-              <label>Mood / Energy</label>
-              <select id="sessMood">
-                <option value="High energy">High energy</option>
-                <option value="Positive">Positive</option>
-                <option value="Neutral" selected>Neutral</option>
-                <option value="Low energy">Low energy</option>
-                <option value="Stressed">Stressed</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Session Notes</label>
-            <textarea id="sessNotes" placeholder="What was discussed? Key takeaways, action items, breakthroughs..."></textarea>
-          </div>
-          <div class="form-group" style="margin-top:8px;">
-            <label>Homework / Action Items</label>
-            <textarea id="sessHomework" placeholder="Tasks assigned for next session..." style="min-height:50px;"></textarea>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-primary" onclick="addSession()">Save Session</button>
-          </div>
-        </div>
-        <div id="sessionList"></div>
-      `;
-      renderSessionList(client);
-    }
-
-    function renderSessionList(client) {
-      const el = document.getElementById("sessionList");
-      if (!el) return;
-      const sessions = [...client.sessions].sort((a, b) => b.date.localeCompare(a.date));
-      if (sessions.length === 0) {
-        el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px;">No sessions yet. Add your first note above.</p>';
-        return;
-      }
-      el.innerHTML = sessions.map(s => `
-        <div class="session-card">
-          <div class="session-card-header">
-            <span class="date">${s.date}</span>
-            <span class="mood">${esc(s.mood)}</span>
-          </div>
-          <p>${esc(s.notes)}</p>
-          ${s.homework ? `<p><strong>Homework:</strong> ${esc(s.homework)}</p>` : ""}
-          <button class="delete-session" onclick="deleteSession('${s.id}')">Delete</button>
-        </div>
-      `).join("");
-    }
-
-    function addSession() {
-      const client = getClient();
-      if (!client) return;
-      const notes = document.getElementById("sessNotes").value.trim();
-      if (!notes) { alert("Please enter session notes."); return; }
-      client.sessions.push({
-        id: Date.now().toString(),
-        date: document.getElementById("sessDate").value,
-        mood: document.getElementById("sessMood").value,
-        notes,
-        homework: document.getElementById("sessHomework").value.trim(),
+      // Calculate totals
+      let totalCalls = 0, totalBooked = 0, totalClosed = 0, totalNoShow = 0;
+      const agentRows = data.agents.map(a => {
+        const calls = filterCallsByWeek(a.calls, weekFilter);
+        const booked = calls.filter(c => c.outcome === "booked" || c.outcome === "closed").length;
+        const closed = calls.filter(c => c.outcome === "closed").length;
+        const noShow = calls.filter(c => c.outcome === "no-show").length;
+        const ratio = calls.length > 0 ? Math.round((closed / calls.length) * 100) : 0;
+        totalCalls += calls.length;
+        totalBooked += booked;
+        totalClosed += closed;
+        totalNoShow += noShow;
+        return { agent: a, calls: calls.length, booked, closed, noShow, ratio };
       });
-      saveData(data);
-      renderMain();
-    }
 
-    function deleteSession(id) {
-      const client = getClient();
-      if (!client) return;
-      client.sessions = client.sessions.filter(s => s.id !== id);
-      saveData(data);
-      renderSessionList(client);
-    }
+      const overallRatio = totalCalls > 0 ? Math.round((totalClosed / totalCalls) * 100) : 0;
+      const bookToCloseRate = totalBooked > 0 ? Math.round((totalClosed / totalBooked) * 100) : 0;
 
-    // --- Goals ---
-    function renderGoals(client, el) {
-      el.innerHTML = `
-        <div class="add-goal-row">
-          <input type="text" id="goalInput" placeholder="Add a goal..." onkeydown="if(event.key==='Enter')addGoal()" />
-          <button class="btn btn-primary" onclick="addGoal()">Add</button>
-        </div>
-        <div id="goalList"></div>
-      `;
-      renderGoalList(client);
-    }
-
-    function renderGoalList(client) {
-      const el = document.getElementById("goalList");
-      if (!el) return;
-      if (client.goals.length === 0) {
-        el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:24px;">No goals yet.</p>';
-        return;
-      }
-      el.innerHTML = client.goals.map(g => `
-        <div class="goal-item ${g.done ? 'completed' : ''}">
-          <input type="checkbox" ${g.done ? 'checked' : ''} onchange="toggleGoal('${g.id}')" />
-          <span class="goal-text">${esc(g.text)}</span>
-          <button class="delete-goal" onclick="deleteGoal('${g.id}')">&times;</button>
-        </div>
-      `).join("");
-    }
-
-    function addGoal() {
-      const client = getClient();
-      if (!client) return;
-      const input = document.getElementById("goalInput");
-      const text = input.value.trim();
-      if (!text) return;
-      client.goals.push({ id: Date.now().toString(), text, done: false });
-      saveData(data);
-      input.value = "";
-      renderGoalList(client);
-    }
-
-    function toggleGoal(id) {
-      const client = getClient();
-      if (!client) return;
-      const goal = client.goals.find(g => g.id === id);
-      if (goal) goal.done = !goal.done;
-      saveData(data);
-      renderGoalList(client);
-    }
-
-    function deleteGoal(id) {
-      const client = getClient();
-      if (!client) return;
-      client.goals = client.goals.filter(g => g.id !== id);
-      saveData(data);
-      renderGoalList(client);
-    }
-
-    // --- AI Insights ---
-    function renderInsights(client, el) {
-      el.innerHTML = `
-        <div class="ai-panel">
-          <h3>AI-Powered Insights</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-            Analyze session notes and get coaching suggestions powered by Claude.
-          </p>
-          <div class="ai-prompt-row">
-            <select id="aiPrompt">
-              <option value="summary">Summarize all sessions</option>
-              <option value="patterns">Identify patterns and themes</option>
-              <option value="progress">Assess progress toward goals</option>
-              <option value="next">Suggest focus areas for next session</option>
-              <option value="strengths">Highlight client strengths</option>
-            </select>
-            <button class="btn btn-primary" id="aiBtn" onclick="runAI()">Generate</button>
+      content.innerHTML = `
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="label">Total Calls</div>
+            <div class="value">${totalCalls}</div>
+            <div class="sub">${weekFilter === 'all' ? 'All time' : 'This week'}</div>
           </div>
-          <div class="ai-result" id="aiResult">Select an analysis type and click Generate.</div>
+          <div class="stat-card">
+            <div class="label">Booked</div>
+            <div class="value">${totalBooked}</div>
+            <div class="sub">Appointments set</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Closed</div>
+            <div class="value" style="color:var(--green)">${totalClosed}</div>
+            <div class="sub">Deals won</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Book-to-Close</div>
+            <div class="value" style="color:var(--primary)">${bookToCloseRate}%</div>
+            <div class="sub">Closing rate from booked</div>
+          </div>
         </div>
+
+        <table class="agents-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Calls</th>
+              <th>Booked</th>
+              <th>Closed</th>
+              <th>No-Show</th>
+              <th>Close Rate</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${agentRows.map(r => `
+              <tr>
+                <td><span class="name-link" onclick="goToAgent('${r.agent.id}')">${esc(r.agent.name)}</span></td>
+                <td>${r.calls}</td>
+                <td>${r.booked}</td>
+                <td><strong style="color:var(--green)">${r.closed}</strong></td>
+                <td>${r.noShow}</td>
+                <td><span class="badge ${r.ratio >= 50 ? 'badge-green' : r.ratio >= 25 ? 'badge-yellow' : 'badge-red'}">${r.ratio}%</span></td>
+                <td style="min-width:120px">
+                  <div class="progress-bar">
+                    <div class="fill" style="width:${r.ratio}%;background:${r.ratio >= 50 ? 'var(--green)' : r.ratio >= 25 ? 'var(--yellow)' : 'var(--red)'}"></div>
+                  </div>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
       `;
     }
 
-    async function runAI() {
-      const client = getClient();
-      if (!client) return;
-      if (client.sessions.length === 0) {
-        document.getElementById("aiResult").textContent = "No sessions to analyze. Add session notes first.";
+    // ════════════════════════════════════════
+    //  AGENT PROFILE VIEW
+    // ════════════════════════════════════════
+    function renderAgentProfile() {
+      const agent = getAgent(activeAgentId);
+      if (!agent) { goToDashboard(); return; }
+
+      const titleEl = document.getElementById("pageTitle");
+      const rightEl = document.getElementById("topbarRight");
+      const content = document.getElementById("content");
+
+      titleEl.textContent = agent.name;
+      rightEl.innerHTML = `
+        <div class="week-filter">
+          <label>Week:</label>
+          <input type="week" id="agentWeek" value="${weekFilter}" onchange="weekFilter=this.value;render()" />
+          <button class="btn btn-sm" onclick="weekFilter='all';document.getElementById('agentWeek').value='';render()">All Time</button>
+        </div>
+      `;
+
+      const calls = filterCallsByWeek(agent.calls, weekFilter);
+      const booked = calls.filter(c => c.outcome === "booked" || c.outcome === "closed").length;
+      const closed = calls.filter(c => c.outcome === "closed").length;
+      const noShow = calls.filter(c => c.outcome === "no-show").length;
+      const pending = calls.filter(c => !c.outcome).length;
+      const ratio = calls.length > 0 ? Math.round((closed / calls.length) * 100) : 0;
+      const bookToClose = booked > 0 ? Math.round((closed / booked) * 100) : 0;
+
+      content.innerHTML = `
+        <div class="profile-stats">
+          <div class="stat-card">
+            <div class="label">Total Calls</div>
+            <div class="value">${calls.length}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Booked</div>
+            <div class="value">${booked}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Closed</div>
+            <div class="value" style="color:var(--green)">${closed}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Book-to-Close</div>
+            <div class="value" style="color:var(--primary)">${bookToClose}%</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">No-Show</div>
+            <div class="value" style="color:var(--yellow)">${noShow}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Close Rate</div>
+            <div class="value">${ratio}%</div>
+            <div class="progress-bar" style="margin-top:6px">
+              <div class="fill" style="width:${ratio}%;background:${ratio >= 50 ? 'var(--green)' : ratio >= 25 ? 'var(--yellow)' : 'var(--red)'}"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Area -->
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <div class="icon">&#128196;</div>
+          <p><strong>Upload Call Transcripts</strong></p>
+          <p class="hint">Drop .txt files here or click to browse. Each file = one call.</p>
+        </div>
+
+        <!-- Call List -->
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;">
+          Calls (${calls.length})
+        </h3>
+        <div id="callList"></div>
+      `;
+
+      // Render calls
+      renderCallList(calls);
+
+      // Setup drag & drop
+      setupUpload(agent.id);
+    }
+
+    function renderCallList(calls) {
+      const el = document.getElementById("callList");
+      if (!el) return;
+
+      if (calls.length === 0) {
+        el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:32px;">No calls yet. Upload a transcript to get started.</p>';
         return;
       }
 
-      const promptType = document.getElementById("aiPrompt").value;
-      const btn = document.getElementById("aiBtn");
-      const resultEl = document.getElementById("aiResult");
+      const sorted = [...calls].sort((a, b) => b.date.localeCompare(a.date));
+      el.innerHTML = sorted.map(c => {
+        const outcomes = ["booked", "closed", "no-show", "not-interested", "callback"];
+        return `
+          <div class="call-card" id="call-${c.id}">
+            <div class="call-card-header">
+              <span class="date">${c.date} &nbsp; <span style="font-weight:400;color:var(--text-muted);font-size:12px;">${esc(c.fileName || 'transcript')}</span></span>
+              <div style="display:flex;gap:6px;align-items:center;">
+                ${c.outcome ? `<span class="badge ${outcomeBadgeClass(c.outcome)}">${c.outcome}</span>` : '<span style="font-size:12px;color:var(--text-muted)">Set outcome:</span>'}
+              </div>
+            </div>
+            <div class="outcome-select">
+              ${outcomes.map(o => `
+                <button class="outcome-btn ${c.outcome === o ? 'selected' : ''}" onclick="setOutcome('${c.id}','${o}')">${o}</button>
+              `).join("")}
+            </div>
+            ${c.analysis ? `
+              <div style="margin-top:12px;">
+                <button class="call-card-toggle" onclick="toggleSection('analysis-${c.id}')">Toggle Analysis</button>
+                <button class="call-card-toggle" onclick="toggleSection('transcript-${c.id}')">Toggle Transcript</button>
+                <div class="analysis" id="analysis-${c.id}" style="margin-top:8px;">${esc(c.analysis)}</div>
+                <div class="transcript-preview" id="transcript-${c.id}" style="display:none;margin-top:8px;">${esc(c.transcript)}</div>
+              </div>
+            ` : `
+              <div style="margin-top:12px;">
+                <button class="btn btn-primary btn-sm" id="analyzeBtn-${c.id}" onclick="analyzeCall('${c.id}')">
+                  Analyze Transcript
+                </button>
+                <button class="call-card-toggle" onclick="toggleSection('transcript-${c.id}')" style="margin-left:6px;">Toggle Transcript</button>
+                <div class="transcript-preview" id="transcript-${c.id}" style="display:none;margin-top:8px;">${esc(c.transcript)}</div>
+              </div>
+            `}
+            <div class="actions">
+              <button class="delete-call" onclick="deleteCall('${c.id}')">Delete call</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
 
-      btn.disabled = true;
-      resultEl.textContent = "Thinking...";
-      resultEl.classList.add("loading");
+    function outcomeBadgeClass(outcome) {
+      switch (outcome) {
+        case "closed": return "badge-green";
+        case "booked": return "badge-blue";
+        case "no-show": return "badge-yellow";
+        case "not-interested": return "badge-red";
+        case "callback": return "badge-blue";
+        default: return "";
+      }
+    }
 
-      const sessionText = client.sessions
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map(s => `[${s.date}] Mood: ${s.mood}\nNotes: ${s.notes}${s.homework ? '\nHomework: ' + s.homework : ''}`)
-        .join("\n\n");
+    function toggleSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+    }
 
-      const goalsText = client.goals.length
-        ? "\n\nGoals:\n" + client.goals.map(g => `- [${g.done ? 'x' : ' '}] ${g.text}`).join("\n")
-        : "";
+    function setOutcome(callId, outcome) {
+      const agent = getAgent(activeAgentId);
+      if (!agent) return;
+      const call = agent.calls.find(c => c.id === callId);
+      if (!call) return;
+      call.outcome = call.outcome === outcome ? null : outcome;
+      saveData(data);
+      render();
+    }
 
-      const prompts = {
-        summary: "Provide a concise summary of all coaching sessions for this client. Highlight key themes, milestones, and overall trajectory.",
-        patterns: "Analyze the session notes and identify recurring patterns, themes, and behavioral trends. Note any shifts over time.",
-        progress: "Assess the client's progress toward their stated goals based on the session notes. Identify areas of strong progress and areas needing more attention.",
-        next: "Based on the session history, suggest 3-5 specific focus areas or discussion topics for the next coaching session. Explain why each is important.",
-        strengths: "Based on the session notes, identify and highlight the client's key strengths, positive patterns, and areas of growth.",
+    function deleteCall(callId) {
+      const agent = getAgent(activeAgentId);
+      if (!agent) return;
+      agent.calls = agent.calls.filter(c => c.id !== callId);
+      saveData(data);
+      render();
+    }
+
+    // ════════════════════════════════════════
+    //  FILE UPLOAD
+    // ════════════════════════════════════════
+    function setupUpload(agentId) {
+      const area = document.getElementById("uploadArea");
+      const input = document.getElementById("fileInput");
+
+      area.addEventListener("dragover", e => { e.preventDefault(); area.classList.add("dragover"); });
+      area.addEventListener("dragleave", () => area.classList.remove("dragover"));
+      area.addEventListener("drop", e => {
+        e.preventDefault();
+        area.classList.remove("dragover");
+        handleFiles(e.dataTransfer.files, agentId);
+      });
+
+      input.onchange = () => {
+        handleFiles(input.files, agentId);
+        input.value = "";
       };
+    }
 
-      const systemPrompt = `You are an expert coaching assistant. You help coaches analyze their session notes and provide actionable insights. Be specific, reference actual session content, and provide practical suggestions. Keep responses clear and well-structured.`;
+    function handleFiles(files, agentId) {
+      const agent = getAgent(agentId);
+      if (!agent) return;
 
-      const userMessage = `Client: ${client.name}\n\nSession History:\n${sessionText}${goalsText}\n\nTask: ${prompts[promptType]}`;
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const transcript = e.target.result;
+          agent.calls.push({
+            id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+            date: new Date().toISOString().slice(0, 10),
+            fileName: file.name,
+            transcript,
+            analysis: null,
+            outcome: null,
+          });
+          saveData(data);
+          render();
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // ════════════════════════════════════════
+    //  TRANSCRIPT ANALYSIS (Claude API)
+    // ════════════════════════════════════════
+    const ANALYSIS_INSTRUCTIONS = `You are an expert sales call analyst and coach. Analyze the following call transcript and provide a structured evaluation.
+
+Evaluate the call on these key areas:
+
+1. OPENING & RAPPORT (Score 1-10)
+   - Did the agent build rapport quickly?
+   - Was the opening professional and engaging?
+   - Did they set an agenda or frame the call?
+
+2. DISCOVERY & NEEDS ANALYSIS (Score 1-10)
+   - Did the agent ask open-ended questions?
+   - Did they uncover the prospect's pain points?
+   - Did they dig deeper with follow-up questions?
+   - Did they understand the prospect's current situation vs desired situation?
+
+3. PRESENTATION & VALUE PROPOSITION (Score 1-10)
+   - Did the agent tie their solution to the prospect's specific pain?
+   - Was the presentation clear and benefit-focused (not feature-dumping)?
+   - Did they use stories, case studies, or social proof?
+
+4. OBJECTION HANDLING (Score 1-10)
+   - How did the agent handle objections or concerns?
+   - Did they acknowledge, isolate, and address objections?
+   - Did they stay calm and empathetic?
+
+5. CLOSING & NEXT STEPS (Score 1-10)
+   - Did the agent attempt to close or set a clear next step?
+   - Was the close natural and assumptive?
+   - Was a follow-up or appointment booked?
+
+6. OVERALL COMMUNICATION (Score 1-10)
+   - Tone, pacing, active listening
+   - Did the agent talk too much vs listen?
+   - Professional language and confidence
+
+FORMAT YOUR RESPONSE AS:
+---
+OVERALL SCORE: [X/60]
+
+OPENING & RAPPORT: [X/10]
+[Brief assessment]
+
+DISCOVERY & NEEDS ANALYSIS: [X/10]
+[Brief assessment]
+
+PRESENTATION & VALUE: [X/10]
+[Brief assessment]
+
+OBJECTION HANDLING: [X/10]
+[Brief assessment]
+
+CLOSING & NEXT STEPS: [X/10]
+[Brief assessment]
+
+COMMUNICATION: [X/10]
+[Brief assessment]
+
+TOP 3 STRENGTHS:
+1. ...
+2. ...
+3. ...
+
+TOP 3 AREAS FOR IMPROVEMENT:
+1. ...
+2. ...
+3. ...
+
+COACHING RECOMMENDATION:
+[One paragraph of specific, actionable advice for this agent's next call]
+---`;
+
+    async function analyzeCall(callId) {
+      const agent = getAgent(activeAgentId);
+      if (!agent) return;
+      const call = agent.calls.find(c => c.id === callId);
+      if (!call) return;
+
+      const btn = document.getElementById(`analyzeBtn-${callId}`);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+      }
 
       try {
         const res = await fetch("/api/claude", {
@@ -687,43 +1002,44 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "claude-sonnet-4-6",
-            max_tokens: 1024,
-            system: systemPrompt,
-            messages: [{ role: "user", content: userMessage }],
+            max_tokens: 2048,
+            system: ANALYSIS_INSTRUCTIONS,
+            messages: [{ role: "user", content: `Here is the call transcript to analyze:\n\n${call.transcript}` }],
           }),
         });
 
         const json = await res.json();
 
-        if (json.error) {
-          resultEl.textContent = "Error: " + (json.error.message || json.error);
-        } else if (json.content && json.content[0]) {
-          resultEl.textContent = json.content[0].text;
+        if (json.content && json.content[0]) {
+          call.analysis = json.content[0].text;
+        } else if (json.error) {
+          call.analysis = "Error: " + (json.error.message || JSON.stringify(json.error));
         } else {
-          resultEl.textContent = "Unexpected response format.";
+          call.analysis = "Unexpected response format.";
         }
       } catch (err) {
-        resultEl.textContent = "Failed to connect: " + err.message;
+        call.analysis = "Failed to analyze: " + err.message;
       }
 
-      resultEl.classList.remove("loading");
-      btn.disabled = false;
+      saveData(data);
+      render();
     }
 
-    // --- Utilities ---
-    function switchTab(tab, el) {
-      activeTab = tab;
-      renderMain();
-    }
-
+    // ════════════════════════════════════════
+    //  UTILITIES
+    // ════════════════════════════════════════
     function esc(str) {
+      if (!str) return "";
       const d = document.createElement("div");
       d.textContent = str;
       return d.innerHTML;
     }
 
-    // --- Init ---
-    renderClientList();
+    // ════════════════════════════════════════
+    //  INIT
+    // ════════════════════════════════════════
+    renderSidebar();
+    render();
   </script>
 </body>
 </html>
