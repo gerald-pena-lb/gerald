@@ -5,8 +5,8 @@ function apiRequest(apiKey, body) {
     const data = JSON.stringify(body);
     const timeout = setTimeout(() => {
       req.destroy();
-      reject(new Error("API request timed out after 20s"));
-    }, 20000);
+      reject(new Error("API request timed out after 24s"));
+    }, 24000);
     const req = https.request(
       {
         hostname: "api.anthropic.com",

@@ -1105,85 +1105,14 @@
     // ════════════════════════════════════════
     //  TRANSCRIPT ANALYSIS (Claude API)
     // ════════════════════════════════════════
-    const ANALYSIS_INSTRUCTIONS = `You are an expert sales coach trained in NEPQ (Neuro-Emotional Persuasion Questions) by Jeremy Miner. Analyze the call transcript and return ONLY valid JSON (no markdown, no code fences).
+    const ANALYSIS_INSTRUCTIONS = `Sales coach using NEPQ (Jeremy Miner). Return ONLY valid JSON, no markdown.
 
-NEPQ Framework for evaluation:
-- CONNECTION Questions: Build trust, lower guard ("I'm just curious...", "Help me understand...")
-- SITUATION Questions: Understand current state without interrogating
-- PROBLEM AWARENESS Questions: Help prospect discover their own pain ("How long has that been going on?", "What have you tried so far?")
-- SOLUTION AWARENESS Questions: Lead prospect to see the solution themselves ("What would it mean if you could...?")
-- CONSEQUENCE Questions: Emotional weight of inaction ("What happens if nothing changes in 6-12 months?")
-- COMMITMENT/Qualifying Questions: Soft trial closes, gauge readiness
+NEPQ: Connection (trust/rapport), Situation (current state), Problem Awareness (discover pain), Solution Awareness (see the fix), Consequence (cost of inaction), Commitment (trial close).
 
-Score each category 1-10. For EACH improvement, quote the EXACT words from the transcript that need work, then provide a rewritten version using NEPQ principles.
+Score 1-10 each. Quote EXACT transcript words for improvements and rewrites.
 
-Return this exact JSON structure:
-{
-  "overallScore": 0,
-  "maxScore": 70,
-  "summary": "1-2 sentence overall assessment",
-  "categories": [
-    {
-      "name": "Connection & Rapport (NEPQ)",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Situation Questions",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Problem Awareness Questions",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Solution Awareness & Value",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Objection Handling",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Closing & Commitment",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    },
-    {
-      "name": "Tone, Pacing & Listening",
-      "score": 0,
-      "maxScore": 10,
-      "assessment": "Brief assessment"
-    }
-  ],
-  "excerpts": [
-    {
-      "type": "improvement",
-      "label": "What needs work",
-      "quote": "Exact words from transcript",
-      "rewrite": "Better NEPQ-based phrasing",
-      "nepqPrinciple": "Which NEPQ principle applies (e.g. Problem Awareness)",
-      "explanation": "Why the rewrite is better"
-    }
-  ],
-  "strengths": [
-    {
-      "quote": "Exact words from transcript that were strong",
-      "explanation": "Why this was effective"
-    }
-  ],
-  "coaching": "Detailed paragraph: specific NEPQ techniques to practice, exact phrases to use, what to stop doing, what to start doing. Be very specific and actionable."
-}`;
+JSON format:
+{"overallScore":0,"maxScore":70,"summary":"1-2 sentences","categories":[{"name":"Connection & Rapport","score":0,"maxScore":10,"assessment":"brief"},{"name":"Situation Questions","score":0,"maxScore":10,"assessment":"brief"},{"name":"Problem Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Solution Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Objection Handling","score":0,"maxScore":10,"assessment":"brief"},{"name":"Closing & Commitment","score":0,"maxScore":10,"assessment":"brief"},{"name":"Tone & Listening","score":0,"maxScore":10,"assessment":"brief"}],"excerpts":[{"type":"improvement","label":"issue label","quote":"exact transcript words","rewrite":"NEPQ phrasing","nepqPrinciple":"principle name","explanation":"why better"}],"strengths":[{"quote":"exact words","explanation":"why effective"}],"coaching":"specific NEPQ techniques, phrases to use, what to stop/start doing"}`;
 
     async function analyzeCall(callId) {
       const agent = getAgent(activeAgentId);
@@ -1198,14 +1127,20 @@ Return this exact JSON structure:
       }
 
       try {
+        // Truncate transcript to ~6000 chars to keep request fast
+        let transcript = call.transcript;
+        if (transcript.length > 6000) {
+          transcript = transcript.substring(0, 6000) + "\n\n[...transcript truncated for analysis]";
+        }
+
         const res = await fetch("/api/claude", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "claude-haiku-4-5-20251001",
-            max_tokens: 2048,
+            max_tokens: 1500,
             system: ANALYSIS_INSTRUCTIONS,
-            messages: [{ role: "user", content: `Here is the call transcript to analyze:\n\n${call.transcript}` }],
+            messages: [{ role: "user", content: `Analyze this call transcript:\n\n${transcript}` }],
           }),
         });
 
