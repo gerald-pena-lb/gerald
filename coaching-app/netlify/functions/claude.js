@@ -3,6 +3,10 @@ const https = require("https");
 function apiRequest(apiKey, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
+    const timeout = setTimeout(() => {
+      req.destroy();
+      reject(new Error("API request timed out after 20s"));
+    }, 20000);
     const req = https.request(
       {
         hostname: "api.anthropic.com",
@@ -18,18 +22,34 @@ function apiRequest(apiKey, body) {
       (res) => {
         let body = "";
         res.on("data", (chunk) => (body += chunk));
-        res.on("end", () => resolve({ statusCode: res.statusCode, body }));
+        res.on("end", () => {
+          clearTimeout(timeout);
+          resolve({ statusCode: res.statusCode, body });
+        });
       }
     );
-    req.on("error", reject);
+    req.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
     req.write(data);
     req.end();
   });
 }
 
 exports.handler = async (event) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: corsHeaders, body: "" };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
