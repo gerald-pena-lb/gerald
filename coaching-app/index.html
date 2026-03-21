@@ -1154,7 +1154,7 @@ JSON format:
 
         if (json.content && json.content[0]) {
           // Store raw JSON analysis
-          call.analysis = json.content[0].text;
+          call.analysis = cleanJsonString(json.content[0].text);
         } else if (json.error) {
           call.analysis = JSON.stringify({ error: json.error.message || JSON.stringify(json.error) });
         } else {
@@ -1178,10 +1178,17 @@ JSON format:
       return "var(--red)";
     }
 
+    function cleanJsonString(str) {
+      // Strip markdown code fences that AI sometimes wraps around JSON
+      let s = str.trim();
+      s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+      return s.trim();
+    }
+
     function renderAnalysisReport(analysisStr) {
       let report;
       try {
-        report = JSON.parse(analysisStr);
+        report = JSON.parse(cleanJsonString(analysisStr));
       } catch {
         // Fallback for old plain-text analyses or errors
         return `<div class="analysis" style="white-space:pre-wrap;">${esc(analysisStr)}</div>`;
