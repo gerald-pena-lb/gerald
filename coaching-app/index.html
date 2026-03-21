@@ -340,9 +340,200 @@
       font-size: 13px;
       line-height: 1.6;
       white-space: pre-wrap;
-      max-height: 400px;
-      overflow-y: auto;
+      max-height: none;
+      overflow-y: visible;
     }
+
+    /* ── Analysis Report ── */
+    .report { font-size: 14px; }
+
+    .report-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .overall-score-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-weight: 800;
+      font-size: 22px;
+      flex-shrink: 0;
+      border: 4px solid;
+    }
+
+    .overall-score-ring .label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .report-header-text h4 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .report-header-text p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    .report-scores {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .score-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .score-card-header .title { font-weight: 700; font-size: 13px; }
+    .score-card-header .score { font-weight: 800; font-size: 15px; }
+
+    .score-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .score-bar .fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .score-card .assessment { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    .report-section {
+      margin-bottom: 20px;
+    }
+
+    .report-section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .report-section-title .icon { font-size: 16px; }
+
+    /* Transcript excerpt cards */
+    .excerpt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--red);
+      border-radius: 0 8px 8px 0;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .excerpt-card.strength {
+      border-left-color: var(--green);
+    }
+
+    .excerpt-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .excerpt-label.issue { color: var(--red); }
+    .excerpt-label.good { color: var(--green); }
+    .excerpt-label.nepq { color: var(--primary); }
+
+    .excerpt-quote {
+      background: #fef2f2;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      font-style: italic;
+      color: #7f1d1d;
+      margin-bottom: 8px;
+    }
+
+    .excerpt-card.strength .excerpt-quote {
+      background: #ecfdf5;
+      color: #064e3b;
+    }
+
+    .excerpt-rewrite {
+      background: #eff6ff;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #1e3a5f;
+      margin-bottom: 8px;
+    }
+
+    .excerpt-rewrite::before {
+      content: "Better approach: ";
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .excerpt-explanation {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .nepq-tag {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-left: 6px;
+    }
+
+    .strength-item, .improvement-item {
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .strength-item { border-left: 3px solid var(--green); }
+    .improvement-item { border-left: 3px solid var(--yellow); }
+
+    .coaching-box {
+      background: var(--primary-light);
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #312e81;
+    }
+
+    .coaching-box strong { color: var(--primary); }
 
     .call-card .transcript-preview {
       background: var(--bg);
@@ -812,7 +1003,8 @@
               <div style="margin-top:12px;">
                 <button class="call-card-toggle" onclick="toggleSection('analysis-${c.id}')">Toggle Analysis</button>
                 <button class="call-card-toggle" onclick="toggleSection('transcript-${c.id}')">Toggle Transcript</button>
-                <div class="analysis" id="analysis-${c.id}" style="margin-top:8px;">${esc(c.analysis)}</div>
+                <button class="call-card-toggle" onclick="reanalyzeCall('${c.id}')" style="margin-left:4px;color:var(--text-muted);">Re-analyze</button>
+                <div id="analysis-${c.id}" style="margin-top:8px;">${renderAnalysisReport(c.analysis)}</div>
                 <div class="transcript-preview" id="transcript-${c.id}" style="display:none;margin-top:8px;">${esc(c.transcript)}</div>
               </div>
             ` : `
@@ -913,76 +1105,85 @@
     // ════════════════════════════════════════
     //  TRANSCRIPT ANALYSIS (Claude API)
     // ════════════════════════════════════════
-    const ANALYSIS_INSTRUCTIONS = `You are an expert sales call analyst and coach. Analyze the following call transcript and provide a structured evaluation.
+    const ANALYSIS_INSTRUCTIONS = `You are an expert sales coach trained in NEPQ (Neuro-Emotional Persuasion Questions) by Jeremy Miner. Analyze the call transcript and return ONLY valid JSON (no markdown, no code fences).
 
-Evaluate the call on these key areas:
+NEPQ Framework for evaluation:
+- CONNECTION Questions: Build trust, lower guard ("I'm just curious...", "Help me understand...")
+- SITUATION Questions: Understand current state without interrogating
+- PROBLEM AWARENESS Questions: Help prospect discover their own pain ("How long has that been going on?", "What have you tried so far?")
+- SOLUTION AWARENESS Questions: Lead prospect to see the solution themselves ("What would it mean if you could...?")
+- CONSEQUENCE Questions: Emotional weight of inaction ("What happens if nothing changes in 6-12 months?")
+- COMMITMENT/Qualifying Questions: Soft trial closes, gauge readiness
 
-1. OPENING & RAPPORT (Score 1-10)
-   - Did the agent build rapport quickly?
-   - Was the opening professional and engaging?
-   - Did they set an agenda or frame the call?
+Score each category 1-10. For EACH improvement, quote the EXACT words from the transcript that need work, then provide a rewritten version using NEPQ principles.
 
-2. DISCOVERY & NEEDS ANALYSIS (Score 1-10)
-   - Did the agent ask open-ended questions?
-   - Did they uncover the prospect's pain points?
-   - Did they dig deeper with follow-up questions?
-   - Did they understand the prospect's current situation vs desired situation?
-
-3. PRESENTATION & VALUE PROPOSITION (Score 1-10)
-   - Did the agent tie their solution to the prospect's specific pain?
-   - Was the presentation clear and benefit-focused (not feature-dumping)?
-   - Did they use stories, case studies, or social proof?
-
-4. OBJECTION HANDLING (Score 1-10)
-   - How did the agent handle objections or concerns?
-   - Did they acknowledge, isolate, and address objections?
-   - Did they stay calm and empathetic?
-
-5. CLOSING & NEXT STEPS (Score 1-10)
-   - Did the agent attempt to close or set a clear next step?
-   - Was the close natural and assumptive?
-   - Was a follow-up or appointment booked?
-
-6. OVERALL COMMUNICATION (Score 1-10)
-   - Tone, pacing, active listening
-   - Did the agent talk too much vs listen?
-   - Professional language and confidence
-
-FORMAT YOUR RESPONSE AS:
----
-OVERALL SCORE: [X/60]
-
-OPENING & RAPPORT: [X/10]
-[Brief assessment]
-
-DISCOVERY & NEEDS ANALYSIS: [X/10]
-[Brief assessment]
-
-PRESENTATION & VALUE: [X/10]
-[Brief assessment]
-
-OBJECTION HANDLING: [X/10]
-[Brief assessment]
-
-CLOSING & NEXT STEPS: [X/10]
-[Brief assessment]
-
-COMMUNICATION: [X/10]
-[Brief assessment]
-
-TOP 3 STRENGTHS:
-1. ...
-2. ...
-3. ...
-
-TOP 3 AREAS FOR IMPROVEMENT:
-1. ...
-2. ...
-3. ...
-
-COACHING RECOMMENDATION:
-[One paragraph of specific, actionable advice for this agent's next call]
----`;
+Return this exact JSON structure:
+{
+  "overallScore": 0,
+  "maxScore": 70,
+  "summary": "1-2 sentence overall assessment",
+  "categories": [
+    {
+      "name": "Connection & Rapport (NEPQ)",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Situation Questions",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Problem Awareness Questions",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Solution Awareness & Value",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Objection Handling",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Closing & Commitment",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    },
+    {
+      "name": "Tone, Pacing & Listening",
+      "score": 0,
+      "maxScore": 10,
+      "assessment": "Brief assessment"
+    }
+  ],
+  "excerpts": [
+    {
+      "type": "improvement",
+      "label": "What needs work",
+      "quote": "Exact words from transcript",
+      "rewrite": "Better NEPQ-based phrasing",
+      "nepqPrinciple": "Which NEPQ principle applies (e.g. Problem Awareness)",
+      "explanation": "Why the rewrite is better"
+    }
+  ],
+  "strengths": [
+    {
+      "quote": "Exact words from transcript that were strong",
+      "explanation": "Why this was effective"
+    }
+  ],
+  "coaching": "Detailed paragraph: specific NEPQ techniques to practice, exact phrases to use, what to stop doing, what to start doing. Be very specific and actionable."
+}`;
 
     async function analyzeCall(callId) {
       const agent = getAgent(activeAgentId);
@@ -993,7 +1194,7 @@ COACHING RECOMMENDATION:
       const btn = document.getElementById(`analyzeBtn-${callId}`);
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+        btn.innerHTML = '<span class="spinner"></span>Analyzing with NEPQ framework...';
       }
 
       try {
@@ -1002,7 +1203,7 @@ COACHING RECOMMENDATION:
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: "claude-haiku-4-5-20251001",
-            max_tokens: 1024,
+            max_tokens: 2048,
             system: ANALYSIS_INSTRUCTIONS,
             messages: [{ role: "user", content: `Here is the call transcript to analyze:\n\n${call.transcript}` }],
           }),
@@ -1017,18 +1218,146 @@ COACHING RECOMMENDATION:
         }
 
         if (json.content && json.content[0]) {
+          // Store raw JSON analysis
           call.analysis = json.content[0].text;
         } else if (json.error) {
-          call.analysis = "Error: " + (json.error.message || JSON.stringify(json.error));
+          call.analysis = JSON.stringify({ error: json.error.message || JSON.stringify(json.error) });
         } else {
-          call.analysis = "Unexpected response format.";
+          call.analysis = JSON.stringify({ error: "Unexpected response format." });
         }
       } catch (err) {
-        call.analysis = "Failed to analyze: " + err.message;
+        call.analysis = JSON.stringify({ error: "Failed to analyze: " + err.message });
       }
 
       saveData(data);
       render();
+    }
+
+    // ════════════════════════════════════════
+    //  ANALYSIS REPORT RENDERER
+    // ════════════════════════════════════════
+    function scoreColor(score, max) {
+      const pct = (score / max) * 100;
+      if (pct >= 70) return "var(--green)";
+      if (pct >= 40) return "var(--yellow)";
+      return "var(--red)";
+    }
+
+    function renderAnalysisReport(analysisStr) {
+      let report;
+      try {
+        report = JSON.parse(analysisStr);
+      } catch {
+        // Fallback for old plain-text analyses or errors
+        return `<div class="analysis" style="white-space:pre-wrap;">${esc(analysisStr)}</div>`;
+      }
+
+      if (report.error) {
+        return `<div style="color:var(--red);padding:12px;background:var(--red-bg);border-radius:8px;font-size:13px;">Error: ${esc(report.error)}</div>`;
+      }
+
+      const pct = Math.round((report.overallScore / report.maxScore) * 100);
+      const color = scoreColor(report.overallScore, report.maxScore);
+
+      let html = `<div class="report">`;
+
+      // Header with overall score
+      html += `
+        <div class="report-header">
+          <div class="overall-score-ring" style="border-color:${color};color:${color};">
+            ${report.overallScore}
+            <span class="label">/ ${report.maxScore}</span>
+          </div>
+          <div class="report-header-text">
+            <h4>NEPQ Analysis Report</h4>
+            <p>${esc(report.summary || '')}</p>
+          </div>
+        </div>`;
+
+      // Score cards grid
+      if (report.categories && report.categories.length) {
+        html += `<div class="report-scores">`;
+        for (const cat of report.categories) {
+          const catPct = Math.round((cat.score / cat.maxScore) * 100);
+          const catColor = scoreColor(cat.score, cat.maxScore);
+          html += `
+            <div class="score-card">
+              <div class="score-card-header">
+                <span class="title">${esc(cat.name)}</span>
+                <span class="score" style="color:${catColor}">${cat.score}/${cat.maxScore}</span>
+              </div>
+              <div class="score-bar">
+                <div class="fill" style="width:${catPct}%;background:${catColor};"></div>
+              </div>
+              <div class="assessment">${esc(cat.assessment || '')}</div>
+            </div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Transcript excerpts - improvements
+      if (report.excerpts && report.excerpts.length) {
+        html += `
+          <div class="report-section">
+            <div class="report-section-title">
+              <span class="icon">&#9888;&#65039;</span> Transcript Moments to Improve
+            </div>`;
+        for (const ex of report.excerpts) {
+          html += `
+            <div class="excerpt-card">
+              <div class="excerpt-label issue">${esc(ex.label || 'Needs improvement')}${ex.nepqPrinciple ? `<span class="nepq-tag">${esc(ex.nepqPrinciple)}</span>` : ''}</div>
+              <div class="excerpt-quote">"${esc(ex.quote || '')}"</div>
+              <div class="excerpt-rewrite">${esc(ex.rewrite || '')}</div>
+              <div class="excerpt-explanation">${esc(ex.explanation || '')}</div>
+            </div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Strengths
+      if (report.strengths && report.strengths.length) {
+        html += `
+          <div class="report-section">
+            <div class="report-section-title">
+              <span class="icon">&#9989;</span> What Worked Well
+            </div>`;
+        for (const s of report.strengths) {
+          html += `
+            <div class="excerpt-card strength">
+              <div class="excerpt-label good">Strength</div>
+              <div class="excerpt-quote">"${esc(s.quote || '')}"</div>
+              <div class="excerpt-explanation">${esc(s.explanation || '')}</div>
+            </div>`;
+        }
+        html += `</div>`;
+      }
+
+      // Coaching recommendation
+      if (report.coaching) {
+        html += `
+          <div class="report-section">
+            <div class="report-section-title">
+              <span class="icon">&#127919;</span> NEPQ Coaching Recommendation
+            </div>
+            <div class="coaching-box">${esc(report.coaching)}</div>
+          </div>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    function reanalyzeCall(callId) {
+      const agent = getAgent(activeAgentId);
+      if (!agent) return;
+      const call = agent.calls.find(c => c.id === callId);
+      if (!call) return;
+      if (!confirm("Re-analyze this call? This will replace the current analysis.")) return;
+      call.analysis = null;
+      saveData(data);
+      render();
+      // Auto-trigger analysis
+      setTimeout(() => analyzeCall(callId), 100);
     }
 
     // ════════════════════════════════════════
