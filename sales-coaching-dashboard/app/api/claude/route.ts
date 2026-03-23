@@ -49,19 +49,25 @@ Analyze the sales call transcript using the 6-stage NEPQ framework below. Use th
 - Handled "I need to think about it" by pointing back to Stage 4 consequence
 - Confirmed specific date and time — did not leave without booking or clear next action
 
-## SCORING — FOLLOW THIS EXACTLY
-For EACH criteria listed under each stage, assign exactly one score:
-- 2 = Done well and naturally, no prompting needed
-- 1 = Attempted but incomplete, forced, or partially skipped
-- 0 = Missing entirely or done incorrectly
+## SCORING — FOLLOW THIS EXACTLY. DO NOT DEVIATE.
 
-Add up the criteria scores for each stage. This is the stage score.
-A criteria scores 0 if there is NO evidence of it in the transcript.
-A criteria scores 1 ONLY if you can point to a specific moment where it was attempted.
-A criteria scores 2 ONLY if you can point to a specific moment where it was done well.
+Step 1: For EACH criteria bullet under each stage, score it individually:
+- 2 = The agent clearly did this well. You can quote a specific line from the transcript as evidence.
+- 1 = The agent partially attempted this. You can point to a moment but it was incomplete or awkward.
+- 0 = There is NO evidence of this anywhere in the transcript, OR it was done incorrectly.
+
+Step 2: Add up the individual criteria scores for each stage. This sum IS the stage score. Do NOT round or adjust.
+
+CRITICAL RULES:
+- Stage 1 has 5 criteria → max 10. Stage 2 has 5 criteria → max 10.
+- Stage 3 has 7 criteria → max 14. Stage 4 has 7 criteria → max 14.
+- Stage 5 has 4 criteria → max 8. Stage 6 has 5 criteria → max 10.
+- If a criteria is NOT applicable (e.g. no objection occurred so "handled objection" can't be scored), score it 1 (benefit of the doubt), NOT 0.
+- If the transcript is short or missing a stage entirely, score all criteria for that stage as 0.
+- The overall score MUST equal the sum of all 6 stage scores. Double-check your arithmetic.
 
 Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥8.
-Total max: 66. Bookable Quality: 56-66. Needs Improvement: 46-55. Mandatory Coaching: below 46.
+Total max: 66. Bookable Quality: ≥62. Needs Improvement: 54-61. Mandatory Coaching: below 54.
 
 ## AUTOMATIC COACHING FLAGS (regardless of score):
 - Stage 1: Ownership reframe missing
@@ -97,7 +103,7 @@ const ANALYSIS_TOOL = {
     properties: {
       overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 66)" },
       maxScore: { type: "number" as const, description: "Always 66" },
-      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (56-66), Needs Improvement (46-55), or Mandatory Coaching (below 46)." },
+      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (62-66), Needs Improvement (54-61), or Mandatory Coaching (below 54)." },
       categories: {
         type: "array" as const,
         description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call. Each stage includes detailed feedback.",
@@ -109,10 +115,10 @@ const ANALYSIS_TOOL = {
             score: { type: "number" as const, description: "Stage score" },
             maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 10" },
             assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
-            transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For red/amber: what the agent said that was problematic. For green: what the agent said that was effective." },
+            transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For stages below pass threshold: what the agent said/didn't say. For passing stages: what the agent said that was effective." },
             transcriptContext: { type: "string" as const, description: "2-4 lines of surrounding transcript context with speaker labels" },
-            feedback: { type: "string" as const, description: "For RED stages (<40%): What was NOT done + specific suggestion with example phrasing. For AMBER stages (40-69%): What was attempted but fell short + specific actions to reach green. For GREEN stages (70%+): Why this was effective from an NEPQ perspective." },
-            suggestion: { type: "string" as const, description: "For red/amber stages: A specific example phrase the agent should use next time. For green stages: leave empty string." },
+            feedback: { type: "string" as const, description: "For stages below pass threshold: Explain which specific criteria scored 0 or 1, what was NOT done, and how to improve. For stages at/above pass threshold: Why this was effective from an NEPQ perspective. Never use color labels like RED/AMBER/GREEN." },
+            suggestion: { type: "string" as const, description: "For stages below pass threshold: A specific example phrase the agent should use next time. For passing stages: leave empty string." },
           },
         },
       },

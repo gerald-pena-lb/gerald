@@ -101,6 +101,32 @@ function scoreColor(pct: number) {
   return COLORS.red;
 }
 
+/* Stage-specific pass thresholds from the QA checklist */
+const STAGE_THRESHOLDS: Record<number, { green: number; amber: number }> = {
+  10: { green: 7, amber: 5 },   // Connect (7/10), Situation (7/10), Book the Call (8/10 → use 7 for amber grouping)
+  14: { green: 10, amber: 7 },  // Problem (10/14), Consequence (10/14)
+  8:  { green: 6, amber: 4 },   // Open Wallet Test (6/8)
+};
+
+/* Override for Book the Call which has a higher pass threshold */
+function getStageThresholds(maxScore: number, name: string): { green: number; amber: number } {
+  if (name.includes("Book") || name.includes("Stage 6")) return { green: 8, amber: 6 };
+  return STAGE_THRESHOLDS[maxScore] || { green: Math.ceil(maxScore * 0.7), amber: Math.ceil(maxScore * 0.5) };
+}
+
+function stageStatus(cat: AnalysisCategory): "green" | "amber" | "red" {
+  const t = getStageThresholds(cat.maxScore, cat.name);
+  if (cat.score >= t.green) return "green";
+  if (cat.score >= t.amber) return "amber";
+  return "red";
+}
+
+function overallScoreColor(score: number): string {
+  if (score >= 62) return COLORS.green;
+  if (score >= 54) return COLORS.yellow;
+  return COLORS.red;
+}
+
 /* ─── Components ─── */
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -122,9 +148,9 @@ function ProgressBar({ value, max, height = 8 }: { value: number; max: number; h
   );
 }
 
-function ScoreRing({ score, max }: { score: number; max: number }) {
+function ScoreRing({ score, max, useOverallColor }: { score: number; max: number; useOverallColor?: boolean }) {
   const pct = max > 0 ? score / max : 0;
-  const color = scoreColor(pct);
+  const color = useOverallColor ? overallScoreColor(score) : scoreColor(pct);
   const circumference = 2 * Math.PI * 40;
   const offset = circumference * (1 - pct);
   return (
@@ -167,16 +193,18 @@ function TranscriptContext({ context }: { context: string }) {
 }
 
 function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
-  const pct = cat.maxScore > 0 ? cat.score / cat.maxScore : 0;
-  const color = scoreColor(pct);
-  const isRed = pct < 0.4;
-  const isAmber = pct >= 0.4 && pct < 0.7;
-  const isGreen = pct >= 0.7;
+  const status = stageStatus(cat);
+  const t = getStageThresholds(cat.maxScore, cat.name);
+  const isRed = status === "red";
+  const isAmber = status === "amber";
+  const isGreen = status === "green";
+  const color = isGreen ? COLORS.green : isAmber ? COLORS.yellow : COLORS.red;
 
   const borderColor = isRed ? COLORS.red : isAmber ? COLORS.yellow : COLORS.green;
-  const statusLabel = isRed ? "Needs Work" : isAmber ? "Almost There" : "Strong";
+  const statusLabel = isRed ? "Needs Work" : isAmber ? "Almost There" : "Pass";
   const statusBg = isRed ? COLORS.redLight : isAmber ? COLORS.yellowLight : COLORS.greenLight;
   const statusTextColor = isRed ? "#991b1b" : isAmber ? "#92400e" : "#065f46";
+  const thresholdNote = isRed ? `Need ${t.green} to pass` : isAmber ? `Need ${t.green - cat.score} more to pass` : "";
 
   return (
     <div style={{ borderLeft: `4px solid ${borderColor}`, borderRadius: 8, padding: 16, marginBottom: 12, background: COLORS.white, border: `1px solid ${COLORS.border}`, borderLeftColor: borderColor, borderLeftWidth: 4 }}>
@@ -187,6 +215,7 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
         <span style={{ background: statusBg, color: statusTextColor, fontSize: 11, padding: "2px 10px", borderRadius: 12, fontWeight: 700 }}>
           {statusLabel}
         </span>
+        {thresholdNote && <span style={{ fontSize: 11, color: COLORS.textSecondary, fontStyle: "italic" }}>{thresholdNote}</span>}
       </div>
 
       <ProgressBar value={cat.score} max={cat.maxScore} />
@@ -225,15 +254,15 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
 
 function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
   const cats = analysis.categories || [];
-  const redStages = cats.filter((c) => c.score / c.maxScore < 0.4);
-  const amberStages = cats.filter((c) => { const p = c.score / c.maxScore; return p >= 0.4 && p < 0.7; });
-  const greenStages = cats.filter((c) => c.score / c.maxScore >= 0.7);
+  const redStages = cats.filter((c) => stageStatus(c) === "red");
+  const amberStages = cats.filter((c) => stageStatus(c) === "amber");
+  const greenStages = cats.filter((c) => stageStatus(c) === "green");
 
   return (
     <div style={{ marginTop: 16 }}>
       {/* Overall Score */}
       <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 24 }}>
-        <ScoreRing score={analysis.overallScore} max={analysis.maxScore} />
+        <ScoreRing score={analysis.overallScore} max={analysis.maxScore} useOverallColor />
         <div>
           <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Overall NEPQ Score</div>
           <div style={{ color: COLORS.textSecondary, fontSize: 14, lineHeight: 1.5 }}>{analysis.summary}</div>
@@ -242,23 +271,27 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
 
       {/* Category Score Overview */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginBottom: 24 }}>
-        {cats.map((cat, i) => (
-          <div key={i} style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>{cat.name}</span>
-              <span style={{ fontWeight: 700, color: scoreColor(cat.score / cat.maxScore), fontSize: 14 }}>{cat.score}/{cat.maxScore}</span>
+        {cats.map((cat, i) => {
+          const s = stageStatus(cat);
+          const stageColor = s === "green" ? COLORS.green : s === "amber" ? COLORS.yellow : COLORS.red;
+          return (
+            <div key={i} style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{cat.name}</span>
+                <span style={{ fontWeight: 700, color: stageColor, fontSize: 14 }}>{cat.score}/{cat.maxScore}</span>
+              </div>
+              <ProgressBar value={cat.score} max={cat.maxScore} />
+              <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8 }}>{cat.assessment}</div>
             </div>
-            <ProgressBar value={cat.score} max={cat.maxScore} />
-            <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8 }}>{cat.assessment}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Red Stages — Critical Issues */}
       {redStages.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.red }}>Critical — Needs Immediate Coaching</h3>
-          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages scored below 40%. Focus coaching here first.</div>
+          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are well below the pass threshold. Focus coaching here first.</div>
           {redStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
         </div>
       )}
@@ -267,7 +300,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
       {amberStages.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.yellow }}>Almost There — Close to Passing</h3>
-          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are in range but need refinement to reach green.</div>
+          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are close to the pass threshold but need refinement.</div>
           {amberStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
         </div>
       )}
