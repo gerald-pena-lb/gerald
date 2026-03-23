@@ -147,7 +147,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <option value="completed">Completed</option>
               </select>
             </div>
-            <button onClick={handleSave} className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">
+            <button onClick={handleSave} className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
               Save Changes
             </button>
           </div>
@@ -169,7 +169,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Meeting Minutes</h2>
-          <button onClick={() => setShowMinuteForm(!showMinuteForm)} className="px-3 py-1.5 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">
+          <button onClick={() => setShowMinuteForm(!showMinuteForm)} className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
             Add Minutes
           </button>
         </div>
@@ -191,7 +191,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               onChange={(e) => setMinuteForm((f) => ({ ...f, content: e.target.value }))}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
-            <button type="submit" className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">Save</button>
+            <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">Save</button>
           </form>
         )}
 
@@ -208,7 +208,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Goals</h2>
-          <button onClick={() => setShowGoalForm(!showGoalForm)} className="px-3 py-1.5 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">
+          <button onClick={() => setShowGoalForm(!showGoalForm)} className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
             Add Goal
           </button>
         </div>
@@ -235,7 +235,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </option>
               ))}
             </select>
-            <button type="submit" className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">Save</button>
+            <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">Save</button>
           </form>
         )}
 

@@ -203,7 +203,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
             >
               Save Changes
             </button>
@@ -226,7 +226,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           <h2 className="text-lg font-semibold text-gray-900">Annual Dues</h2>
           <button
             onClick={() => setShowDuesForm(!showDuesForm)}
-            className="px-3 py-1.5 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+            className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
           >
             Record Payment
           </button>
@@ -275,7 +275,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
               />
             </div>
             <div className="col-span-2">
-              <button type="submit" className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">
+              <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
                 Save
               </button>
             </div>
@@ -317,7 +317,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           <h2 className="text-lg font-semibold text-gray-900">Donations</h2>
           <button
             onClick={() => setShowDonationForm(!showDonationForm)}
-            className="px-3 py-1.5 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+            className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
           >
             Record Donation
           </button>
@@ -365,7 +365,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
               />
             </div>
             <div className="col-span-2">
-              <button type="submit" className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">
+              <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
                 Save
               </button>
             </div>

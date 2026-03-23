@@ -70,9 +70,9 @@ export default function Home() {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white rounded-lg shadow p-5">
+    <div className="bg-white rounded-lg shadow p-5 border-t-4 border-[#c9a227]">
       <div className="text-sm text-gray-500">{label}</div>
-      <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
+      <div className="text-2xl font-bold text-[#1e3a5f] mt-1">{value}</div>
     </div>
   );
 }
@@ -83,7 +83,7 @@ function QuickLink({ href, title, desc }: { href: string; title: string; desc: s
       href={href}
       className="bg-white rounded-lg shadow p-5 hover:shadow-md transition-shadow block"
     >
-      <div className="font-semibold text-gray-900">{title}</div>
+      <div className="font-semibold text-[#1e3a5f]">{title}</div>
       <div className="text-sm text-gray-500 mt-1">{desc}</div>
     </Link>
   );

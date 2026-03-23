@@ -81,7 +81,7 @@ export default function BrodsPage() {
           </label>
           <Link
             href="/brods/new"
-            className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+            className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
           >
             Add New Brod
           </Link>
@@ -167,7 +167,7 @@ export default function BrodsPage() {
             {members.map((m) => (
               <tr key={m.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-sm">
-                  <Link href={`/brods/${m.id}`} className="text-[#7b1113] hover:underline font-medium">
+                  <Link href={`/brods/${m.id}`} className="text-[#1e3a5f] hover:underline font-medium">
                     {m.full_name}
                   </Link>
                 </td>
