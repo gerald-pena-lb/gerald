@@ -49,8 +49,18 @@ Analyze the sales call transcript using the 6-stage NEPQ framework below. Use th
 - Handled "I need to think about it" by pointing back to Stage 4 consequence
 - Confirmed specific date and time — did not leave without booking or clear next action
 
-## SCORING
-Each criteria: 2 = done well/naturally, 1 = attempted but incomplete, 0 = missing/incorrect.
+## SCORING — FOLLOW THIS EXACTLY
+For EACH criteria listed under each stage, assign exactly one score:
+- 2 = Done well and naturally, no prompting needed
+- 1 = Attempted but incomplete, forced, or partially skipped
+- 0 = Missing entirely or done incorrectly
+
+Add up the criteria scores for each stage. This is the stage score.
+A criteria scores 0 if there is NO evidence of it in the transcript.
+A criteria scores 1 ONLY if you can point to a specific moment where it was attempted.
+A criteria scores 2 ONLY if you can point to a specific moment where it was done well.
+
+Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥8.
 Total max: 66. Bookable Quality: 56-66. Needs Improvement: 46-55. Mandatory Coaching: below 46.
 
 ## AUTOMATIC COACHING FLAGS (regardless of score):
@@ -126,9 +136,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
     }
 
-    const trimmed = transcript.slice(0, 4000);
+    const trimmed = transcript.slice(0, 12000);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -141,6 +151,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 6000,
+          temperature: 0,
           system: SYSTEM_PROMPT,
           tools: [ANALYSIS_TOOL],
           tool_choice: { type: "tool", name: "submit_analysis" },
