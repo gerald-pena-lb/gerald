@@ -394,9 +394,9 @@ export default function Page() {
       // If truncated, trim back to last complete property and close all brackets
       if (resData.stop_reason === "max_tokens") {
         // Remove any trailing partial value (after last complete key:value pair)
-        text = text.replace(/,\s*"[^"]*"?\s*:\s*("[^"]*)?$/s, "");
-        text = text.replace(/,\s*\{[^}]*$/s, "");
-        text = text.replace(/,\s*"[^"]*$/s, "");
+        text = text.replace(/,\s*"[^"]*"?\s*:\s*("[^"]*)?$/, "");
+        text = text.replace(/,\s*\{[^}]*$/, "");
+        text = text.replace(/,\s*"[^"]*$/, "");
         // Close open structures using a stack
         const stack: string[] = [];
         let inString = false, escaped = false;
