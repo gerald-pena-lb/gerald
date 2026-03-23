@@ -1,23 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  const event = db.prepare("SELECT * FROM events WHERE id = ?").get(Number(id));
-  if (!event) {
-    db.close();
+  const numId = Number(id);
+
+  const { data: event, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", numId)
+    .single();
+
+  if (error || !event) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const minutes = db.prepare("SELECT * FROM meeting_minutes WHERE event_id = ? ORDER BY date DESC").all(Number(id));
-  const goals = db.prepare("SELECT * FROM goals WHERE event_id = ? ORDER BY created_at DESC").all(Number(id));
-  const expenditures = db.prepare("SELECT * FROM expenditures WHERE event_id = ? ORDER BY date DESC").all(Number(id));
-  db.close();
-  return NextResponse.json({ ...event as object, minutes, goals, expenditures });
+  const [minutesRes, goalsRes, expendituresRes] = await Promise.all([
+    supabase.from("meeting_minutes").select("*").eq("event_id", numId).order("date", { ascending: false }),
+    supabase.from("goals").select("*").eq("event_id", numId).order("created_at", { ascending: false }),
+    supabase.from("expenditures").select("*").eq("event_id", numId).order("date", { ascending: false }),
+  ]);
+
+  return NextResponse.json({
+    ...event,
+    minutes: minutesRes.data || [],
+    goals: goalsRes.data || [],
+    expenditures: expendituresRes.data || [],
+  });
 }
 
 export async function PUT(
@@ -25,15 +37,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
   const body = await req.json();
 
-  db.prepare(`
-    UPDATE events SET name = ?, description = ?, date = ?, type = ?, status = ?
-    WHERE id = ?
-  `).run(body.name, body.description || null, body.date, body.type, body.status, Number(id));
+  const { error } = await supabase
+    .from("events")
+    .update({
+      name: body.name,
+      description: body.description || null,
+      date: body.date,
+      type: body.type,
+      status: body.status,
+    })
+    .eq("id", Number(id));
 
-  db.close();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }
 
@@ -42,8 +59,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  db.prepare("DELETE FROM events WHERE id = ?").run(Number(id));
-  db.close();
+  const { error } = await supabase.from("events").delete().eq("id", Number(id));
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }

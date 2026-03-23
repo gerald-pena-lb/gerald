@@ -1,45 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  const db = getDb();
   const url = new URL(req.url);
   const memberId = url.searchParams.get("member_id");
 
-  let query = `
-    SELECT d.*, m.full_name
-    FROM donations d
-    JOIN members m ON d.member_id = m.id
-    WHERE 1=1
-  `;
-  const params: unknown[] = [];
+  let query = supabase
+    .from("donations")
+    .select("*, members!inner(full_name)");
 
-  if (memberId) {
-    query += " AND d.member_id = ?";
-    params.push(Number(memberId));
-  }
-  query += " ORDER BY d.date_given DESC";
+  if (memberId) query = query.eq("member_id", Number(memberId));
 
-  const donations = db.prepare(query).all(...params);
-  db.close();
-  return NextResponse.json(donations);
+  const { data, error } = await query.order("date_given", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const result = (data || []).map((d) => ({
+    ...d,
+    full_name: (d.members as { full_name: string }).full_name,
+    members: undefined,
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {
-  const db = getDb();
   const body = await req.json();
 
-  const result = db.prepare(`
-    INSERT INTO donations (member_id, amount, date_given, remarks, transaction_reference)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(
-    body.member_id,
-    body.amount,
-    body.date_given,
-    body.remarks || null,
-    body.transaction_reference || null
-  );
+  const { data, error } = await supabase
+    .from("donations")
+    .insert({
+      member_id: body.member_id,
+      amount: body.amount,
+      date_given: body.date_given,
+      remarks: body.remarks || null,
+      transaction_reference: body.transaction_reference || null,
+    })
+    .select("id")
+    .single();
 
-  db.close();
-  return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ id: data.id }, { status: 201 });
 }

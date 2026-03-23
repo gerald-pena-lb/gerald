@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
   const body = await req.json();
 
-  const result = db.prepare(`
-    INSERT INTO meeting_minutes (event_id, date, content)
-    VALUES (?, ?, ?)
-  `).run(Number(id), body.date, body.content);
+  const { data, error } = await supabase
+    .from("meeting_minutes")
+    .insert({
+      event_id: Number(id),
+      date: body.date,
+      content: body.content,
+    })
+    .select("id")
+    .single();
 
-  db.close();
-  return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ id: data.id }, { status: 201 });
 }
