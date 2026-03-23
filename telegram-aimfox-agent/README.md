@@ -1,6 +1,6 @@
-# Telegram Aimfox Agent
+# Tiffany — Telegram Aimfox Agent
 
-A Telegram bot powered by Claude AI that lets you check how your human agents are performing in Aimfox — right from a chat.
+Tiffany is a Telegram bot powered by Claude AI that lets you check how your human agents are performing in Aimfox — right from a chat.
 
 Ask questions in plain English like:
 - "How are my agents doing?"

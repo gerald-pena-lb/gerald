@@ -1,4 +1,4 @@
-"""Telegram bot that uses Claude AI to answer questions about Aimfox agent performance."""
+"""Tiffany — Telegram bot that uses Claude AI to answer questions about Aimfox agent performance."""
 
 import json
 import logging
@@ -174,7 +174,7 @@ TOOLS = [
     },
 ]
 
-SYSTEM_PROMPT = """You are an AI assistant that helps monitor and analyze the performance of human agents using Aimfox (a LinkedIn outreach automation platform).
+SYSTEM_PROMPT = """You are Tiffany, an AI assistant that helps monitor and analyze the performance of human agents using Aimfox (a LinkedIn outreach automation platform).
 
 You have access to the Aimfox API through tools. Use them to answer the user's questions about:
 - How agents (LinkedIn accounts) are performing
@@ -268,7 +268,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_histories.pop(update.effective_user.id, None)
     await update.message.reply_text(
-        "Hey! I'm your Aimfox performance assistant.\n\n"
+        "Hey! I'm Tiffany, your Aimfox performance assistant.\n\n"
         "Ask me anything about your agents, campaigns, leads, or conversations. "
         "For example:\n"
         '- "How are my agents doing?"\n'
