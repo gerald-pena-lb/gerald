@@ -358,11 +358,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+OWNER_CHAT_ID = 8500642642
+
+
+async def greet_owner(app: Application):
+    """Send a greeting to the owner when the bot starts."""
+    try:
+        await app.bot.send_message(
+            chat_id=OWNER_CHAT_ID,
+            text="Hey! Tiffany here. I'm online and ready to help. What do you need?",
+        )
+        logger.info(f"Sent startup greeting to {OWNER_CHAT_ID}")
+    except Exception as e:
+        logger.warning(f"Could not send startup greeting: {e}")
+
+
 def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("clear", clear))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    app.post_init = greet_owner
 
     logger.info("Bot starting...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
