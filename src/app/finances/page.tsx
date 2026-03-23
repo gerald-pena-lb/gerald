@@ -37,18 +37,28 @@ interface EventOption {
   name: string;
 }
 
+interface MemberOption {
+  id: number;
+  full_name: string;
+}
+
 export default function FinancesPage() {
   const [tab, setTab] = useState<"dues" | "donations" | "expenditures">("dues");
   const [dues, setDues] = useState<DuesEntry[]>([]);
   const [donations, setDonations] = useState<DonationEntry[]>([]);
   const [expenditures, setExpenditures] = useState<Expenditure[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
   const [duesYear, setDuesYear] = useState(new Date().getFullYear().toString());
   const [showExpForm, setShowExpForm] = useState(false);
   const [expForm, setExpForm] = useState({ description: "", amount: "", date: "", event_id: "", remarks: "" });
+  const [showDuesForm, setShowDuesForm] = useState(false);
+  const [duesForm, setDuesForm] = useState({ member_id: "", fiscal_year: "", amount: "", date_paid: "", remarks: "" });
+  const [duesError, setDuesError] = useState("");
 
   useEffect(() => {
     fetch("/api/events").then((r) => r.json()).then(setEvents);
+    fetch("/api/members").then((r) => r.json()).then(setMembers);
   }, []);
 
   useEffect(() => {
@@ -60,6 +70,34 @@ export default function FinancesPage() {
       fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures);
     }
   }, [tab, duesYear]);
+
+  function reloadDues() {
+    fetch(`/api/dues?year=${duesYear}`).then((r) => r.json()).then(setDues);
+  }
+
+  async function handleAddDues(e: React.FormEvent) {
+    e.preventDefault();
+    setDuesError("");
+    const res = await fetch("/api/dues", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        member_id: Number(duesForm.member_id),
+        year: Number(duesForm.fiscal_year),
+        amount: Number(duesForm.amount),
+        date_paid: duesForm.date_paid,
+        remarks: duesForm.remarks,
+      }),
+    });
+    if (res.ok) {
+      setShowDuesForm(false);
+      setDuesForm({ member_id: "", fiscal_year: "", amount: "", date_paid: "", remarks: "" });
+      reloadDues();
+    } else {
+      const err = await res.json();
+      setDuesError(err.error || "Failed to save dues");
+    }
+  }
 
   async function handleAddExpenditure(e: React.FormEvent) {
     e.preventDefault();
@@ -105,21 +143,96 @@ export default function FinancesPage() {
 
       {tab === "dues" && (
         <div>
-          <div className="mb-4 flex items-center gap-3">
-            <label className="text-sm text-gray-600">Year:</label>
-            <input
-              type="number"
-              value={duesYear}
-              onChange={(e) => setDuesYear(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm w-24"
-            />
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-600">Fiscal Year:</label>
+              <input
+                type="number"
+                value={duesYear}
+                onChange={(e) => setDuesYear(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm w-24"
+              />
+            </div>
+            <button
+              onClick={() => { setShowDuesForm(!showDuesForm); setDuesError(""); }}
+              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
+            >
+              Log Dues Payment
+            </button>
           </div>
+
+          {showDuesForm && (
+            <form onSubmit={handleAddDues} className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-2 gap-3">
+              {duesError && (
+                <div className="col-span-2 p-2 bg-red-50 text-red-700 rounded-md text-sm">{duesError}</div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Member *</label>
+                <select
+                  required
+                  value={duesForm.member_id}
+                  onChange={(e) => setDuesForm((f) => ({ ...f, member_id: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="">Select Member</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.full_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Fiscal Year *</label>
+                <input
+                  type="number"
+                  required
+                  placeholder={new Date().getFullYear().toString()}
+                  value={duesForm.fiscal_year}
+                  onChange={(e) => setDuesForm((f) => ({ ...f, fiscal_year: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Amount *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={duesForm.amount}
+                  onChange={(e) => setDuesForm((f) => ({ ...f, amount: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date Paid *</label>
+                <input
+                  type="date"
+                  required
+                  value={duesForm.date_paid}
+                  onChange={(e) => setDuesForm((f) => ({ ...f, date_paid: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Remarks</label>
+                <input
+                  type="text"
+                  value={duesForm.remarks}
+                  onChange={(e) => setDuesForm((f) => ({ ...f, remarks: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="col-span-2">
+                <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">Save</button>
+              </div>
+            </form>
+          )}
+
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fiscal Year</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date Paid</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remarks</th>
