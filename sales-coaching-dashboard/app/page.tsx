@@ -8,7 +8,6 @@ interface Call {
   id: string;
   date: string;
   fileName: string;
-  transcript: string;
   analysis: AnalysisResult | null;
   outcome: string;
 }
@@ -245,7 +244,6 @@ export default function Page() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [weekFilter, setWeekFilter] = useState("");
   const [expandedAnalysis, setExpandedAnalysis] = useState<Record<string, boolean>>({});
-  const [expandedTranscript, setExpandedTranscript] = useState<Record<string, boolean>>({});
   const [analyzingCalls, setAnalyzingCalls] = useState<Record<string, boolean>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -293,32 +291,27 @@ export default function Page() {
     });
   }
 
-  function processFiles(files: File[], agentId: string) {
-    const newCalls: Call[] = [];
-    let loaded = 0;
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        if (text?.trim()) {
-          newCalls.push({
-            id: uid(),
-            date: new Date().toISOString(),
-            fileName: file.name,
-            transcript: text,
-            analysis: null,
-            outcome: "",
-          });
-        }
-        loaded++;
-        if (loaded === files.length) addCalls(agentId, newCalls);
-      };
-      reader.onerror = () => {
-        loaded++;
-        if (loaded === files.length) addCalls(agentId, newCalls);
-      };
-      reader.readAsText(file);
-    });
+  async function processFiles(files: File[], agentId: string) {
+    setAnalyzingCalls((p) => ({ ...p, [agentId]: true }));
+    try {
+      for (const file of files) {
+        const text = await file.text();
+        if (!text?.trim()) continue;
+        const analysis = await analyzeTranscript(text);
+        const call: Call = {
+          id: uid(),
+          date: new Date().toISOString(),
+          fileName: file.name,
+          analysis,
+          outcome: "",
+        };
+        addCalls(agentId, [call]);
+      }
+    } catch (err) {
+      alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setAnalyzingCalls((p) => ({ ...p, [agentId]: false }));
+    }
   }
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -338,18 +331,27 @@ export default function Page() {
     processFiles(files, selectedAgent.id);
   }
 
-  function handlePasteSubmit() {
+  async function handlePasteSubmit() {
     if (!selectedAgent || !pasteText.trim()) return;
-    addCalls(selectedAgent.id, [{
-      id: uid(),
-      date: new Date().toISOString(),
-      fileName: `Pasted ${new Date().toLocaleString()}`,
-      transcript: pasteText.trim(),
-      analysis: null,
-      outcome: "",
-    }]);
+    const agentId = selectedAgent.id;
+    const text = pasteText.trim();
     setPasteText("");
     setShowPaste(false);
+    setAnalyzingCalls((p) => ({ ...p, [agentId]: true }));
+    try {
+      const analysis = await analyzeTranscript(text);
+      addCalls(agentId, [{
+        id: uid(),
+        date: new Date().toISOString(),
+        fileName: `Pasted ${new Date().toLocaleString()}`,
+        analysis,
+        outcome: "",
+      }]);
+    } catch (err) {
+      alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setAnalyzingCalls((p) => ({ ...p, [agentId]: false }));
+    }
   }
 
   function setOutcome(agentId: string, callId: string, outcome: string) {
@@ -369,43 +371,24 @@ export default function Page() {
     persist({ agents });
   }
 
-  async function analyzeCall(agentId: string, callId: string) {
-    const agent = data.agents.find((a) => a.id === agentId);
-    const call = agent?.calls.find((c) => c.id === callId);
-    if (!call) return;
+  async function analyzeTranscript(transcript: string): Promise<AnalysisResult> {
+    const trimmed = transcript.slice(0, 6000);
+    const res = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 8192,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: `Analyze this sales call transcript:\n\n${trimmed}` }],
+      }),
+    });
+    const resData = await res.json();
+    if (!res.ok) throw new Error(resData.error || "API error");
 
-    setAnalyzingCalls((p) => ({ ...p, [callId]: true }));
-    try {
-      const transcript = call.transcript.slice(0, 6000);
-      const res = await fetch("/api/claude", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 8192,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: `Analyze this sales call transcript:\n\n${transcript}` }],
-        }),
-      });
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "API error");
-
-      let text = resData.content?.[0]?.text || "";
-      text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-      const analysis: AnalysisResult = JSON.parse(jsonrepair(text));
-
-      const agents = data.agents.map((a) =>
-        a.id === agentId
-          ? { ...a, calls: a.calls.map((c) => (c.id === callId ? { ...c, analysis } : c)) }
-          : a
-      );
-      persist({ agents });
-      setExpandedAnalysis((p) => ({ ...p, [callId]: true }));
-    } catch (err) {
-      alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
-    } finally {
-      setAnalyzingCalls((p) => ({ ...p, [callId]: false }));
-    }
+    let text = resData.content?.[0]?.text || "";
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    return JSON.parse(jsonrepair(text));
   }
 
   /* ─── Computed Stats ─── */
@@ -736,9 +719,14 @@ export default function Page() {
                         fontSize: 13,
                       }}
                     >
-                      Add Transcript
+                      Analyze & Add
                     </button>
                   </div>
+                </div>
+              )}
+              {selectedAgent && analyzingCalls[selectedAgent.id] && (
+                <div style={{ marginTop: 12, padding: 16, background: "#fef3c7", borderRadius: 10, textAlign: "center", fontWeight: 600, fontSize: 14, color: "#92400e" }}>
+                  Analyzing transcript... this may take a moment.
                 </div>
               )}
             </div>
@@ -781,34 +769,15 @@ export default function Page() {
 
                   {/* Action Buttons */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {call.analysis ? (
-                      <>
-                        <button onClick={() => setExpandedAnalysis((p) => ({ ...p, [call.id]: !p[call.id] }))} style={btnSmall}>
-                          {expandedAnalysis[call.id] ? "Hide" : "Show"} Analysis
-                        </button>
-                        <button onClick={() => analyzeCall(selectedAgent.id, call.id)} disabled={analyzingCalls[call.id]} style={{ ...btnSmall, background: COLORS.white, color: COLORS.primary, border: `1px solid ${COLORS.primary}` }}>
-                          {analyzingCalls[call.id] ? "Analyzing..." : "Re-analyze"}
-                        </button>
-                      </>
-                    ) : (
-                      <button onClick={() => analyzeCall(selectedAgent.id, call.id)} disabled={analyzingCalls[call.id]} style={btnSmall}>
-                        {analyzingCalls[call.id] ? "Analyzing..." : "Analyze Transcript"}
+                    {call.analysis && (
+                      <button onClick={() => setExpandedAnalysis((p) => ({ ...p, [call.id]: !p[call.id] }))} style={btnSmall}>
+                        {expandedAnalysis[call.id] ? "Hide" : "Show"} Analysis
                       </button>
                     )}
-                    <button onClick={() => setExpandedTranscript((p) => ({ ...p, [call.id]: !p[call.id] }))} style={{ ...btnSmall, background: COLORS.white, color: COLORS.textPrimary, border: `1px solid ${COLORS.border}` }}>
-                      {expandedTranscript[call.id] ? "Hide" : "Show"} Transcript
-                    </button>
                   </div>
 
                   {/* Analysis */}
                   {expandedAnalysis[call.id] && call.analysis && <AnalysisReport analysis={call.analysis} />}
-
-                  {/* Transcript */}
-                  {expandedTranscript[call.id] && (
-                    <div style={{ marginTop: 16, background: "#f9fafb", borderRadius: 8, padding: 16, maxHeight: 400, overflow: "auto" }}>
-                      <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.6, margin: 0 }}>{call.transcript}</pre>
-                    </div>
-                  )}
                 </div>
               ))}
 
