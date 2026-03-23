@@ -44,6 +44,11 @@ interface AnalysisResult {
   coaching: string;
 }
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 /* ─── Constants ─── */
 const COLORS = {
   primary: "#4f46e5",
@@ -334,6 +339,201 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
           <div style={{ fontSize: 14, color: "#3730a3", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{analysis.coaching}</div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── PDF Download ─── */
+async function downloadPdf(elementId: string, fileName: string) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const html2pdf = (await import("html2pdf.js" as any)).default;
+  html2pdf()
+    .set({
+      margin: [10, 10, 10, 10],
+      filename: fileName,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+    })
+    .from(element)
+    .save();
+}
+
+/* ─── AI Assistant Widget ─── */
+function AssistantWidget({ data }: { data: AppData }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  function buildContext(): string {
+    const lines: string[] = [];
+    data.agents.forEach((agent) => {
+      const calls = agent.calls;
+      const total = calls.length;
+      const booked = calls.filter((c) => c.outcome === "booked").length;
+      const closed = calls.filter((c) => c.outcome === "closed").length;
+      const noShow = calls.filter((c) => c.outcome === "no-show").length;
+      lines.push(`\nAgent: ${agent.name} (${total} calls, ${booked} booked, ${closed} closed, ${noShow} no-shows)`);
+      calls.forEach((call) => {
+        const a = call.analysis;
+        if (!a) return;
+        const prospect = call.prospectName || "Unknown";
+        const date = call.callDate || call.date;
+        const stages = (a.categories || []).map((c) => `${c.name}: ${c.score}/${c.maxScore}`).join(", ");
+        const flags = (a.coachingFlags || []).join("; ") || "None";
+        lines.push(`  Call: ${prospect} (${date}) | Score: ${a.overallScore}/${a.maxScore} | Outcome: ${call.outcome || "pending"}`);
+        lines.push(`    Stages: ${stages}`);
+        lines.push(`    Flags: ${flags}`);
+      });
+    });
+    return lines.join("\n");
+  }
+
+  async function sendMessage() {
+    if (!input.trim() || loading) return;
+    const question = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, context: buildContext() }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setMessages((prev) => [...prev, { role: "assistant", content: json.answer }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${json.error}` }]);
+      }
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Failed to reach assistant." }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 2000,
+          width: 56, height: 56, borderRadius: "50%",
+          background: COLORS.primary, color: COLORS.white, border: "none",
+          fontSize: 24, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+        title="AI Assistant"
+      >
+        &#128172;
+      </button>
+    );
+  }
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, right: 0, bottom: 0, width: 380, zIndex: 2000,
+      background: COLORS.white, borderLeft: `1px solid ${COLORS.border}`,
+      display: "flex", flexDirection: "column", boxShadow: "-4px 0 24px rgba(0,0,0,0.1)",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "16px 20px", borderBottom: `1px solid ${COLORS.border}`,
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        background: COLORS.primary,
+      }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.white }}>AI Assistant</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>Ask about agent performance, scores, trends</div>
+        </div>
+        <button
+          onClick={() => setOpen(false)}
+          style={{ background: "none", border: "none", color: COLORS.white, fontSize: 22, cursor: "pointer", padding: "0 4px" }}
+        >
+          &times;
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: "center", color: COLORS.textSecondary, marginTop: 40 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>&#128172;</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Ask me anything</div>
+            <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+              &ldquo;How is Sarah performing this week?&rdquo;<br />
+              &ldquo;Which agent has the best close rate?&rdquo;<br />
+              &ldquo;What are the most common coaching flags?&rdquo;
+            </div>
+          </div>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "85%",
+              padding: "10px 14px",
+              borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+              background: msg.role === "user" ? COLORS.primary : "#f3f4f6",
+              color: msg.role === "user" ? COLORS.white : COLORS.textPrimary,
+              fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap",
+            }}
+          >
+            {msg.content}
+          </div>
+        ))}
+        {loading && (
+          <div style={{ alignSelf: "flex-start", padding: "10px 14px", borderRadius: "14px 14px 14px 4px", background: "#f3f4f6", fontSize: 13, color: COLORS.textSecondary }}>
+            Thinking...
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding: "12px 16px", borderTop: `1px solid ${COLORS.border}`, display: "flex", gap: 8,
+      }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          placeholder="Ask a question..."
+          style={{
+            flex: 1, padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`,
+            fontSize: 13, outline: "none",
+          }}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={loading || !input.trim()}
+          style={{
+            padding: "10px 16px", borderRadius: 8, border: "none",
+            background: input.trim() && !loading ? COLORS.primary : "#c7d2fe",
+            color: COLORS.white, fontWeight: 600, fontSize: 13, cursor: input.trim() && !loading ? "pointer" : "not-allowed",
+          }}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 }
@@ -978,10 +1178,28 @@ export default function Page() {
                         {expandedAnalysis[call.id] ? "Hide" : "Show"} Analysis
                       </button>
                     )}
+                    {call.analysis && (
+                      <button
+                        onClick={() => downloadPdf(`analysis-${call.id}`, `${call.prospectName || "Call"}-Analysis.pdf`)}
+                        style={{ ...btnSmall, background: COLORS.white, color: COLORS.primary, border: `1px solid ${COLORS.primary}` }}
+                      >
+                        Download PDF
+                      </button>
+                    )}
                   </div>
 
                   {/* Analysis */}
-                  {expandedAnalysis[call.id] && call.analysis && <AnalysisReport analysis={call.analysis} />}
+                  {expandedAnalysis[call.id] && call.analysis && (
+                    <div id={`analysis-${call.id}`}>
+                      <div style={{ padding: "16px 0 8px 0", borderBottom: `1px solid ${COLORS.border}`, marginBottom: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: 16 }}>{call.prospectName || call.fileName}</div>
+                        <div style={{ fontSize: 12, color: COLORS.textSecondary }}>
+                          {call.callDate ? `Call date: ${new Date(call.callDate + "T00:00:00").toLocaleDateString()}` : ""} | Agent: {selectedAgent.name}
+                        </div>
+                      </div>
+                      <AnalysisReport analysis={call.analysis} />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -991,6 +1209,9 @@ export default function Page() {
           </>
         )}
       </main>
+
+      {/* AI Assistant Widget */}
+      <AssistantWidget data={data} />
 
       {/* Mobile responsive style */}
       <style>{`
