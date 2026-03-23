@@ -84,7 +84,7 @@ const OUTCOMES = [
 
 const SYSTEM_PROMPT = `Sales coach using NEPQ (Jeremy Miner). Return ONLY valid JSON, no markdown.
 NEPQ: Connection (trust/rapport), Situation (current state), Problem Awareness (discover pain), Solution Awareness (see the fix), Consequence (cost of inaction), Commitment (trial close).
-Score 1-10 each. Keep assessments under 20 words. Limit to 3 excerpts and 3 strengths. Use SHORT quotes (max 15 words each).
+Score 1-10 each. Keep ALL text fields under 15 words. Max 2 excerpts, 2 strengths. Coaching under 30 words.
 JSON format: {"overallScore":0,"maxScore":70,"summary":"1-2 sentences","categories":[{"name":"Connection & Rapport","score":0,"maxScore":10,"assessment":"brief"},{"name":"Situation Questions","score":0,"maxScore":10,"assessment":"brief"},{"name":"Problem Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Solution Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Objection Handling","score":0,"maxScore":10,"assessment":"brief"},{"name":"Closing & Commitment","score":0,"maxScore":10,"assessment":"brief"},{"name":"Tone & Listening","score":0,"maxScore":10,"assessment":"brief"}],"excerpts":[{"type":"improvement","label":"issue label","quote":"exact transcript words","rewrite":"NEPQ phrasing","nepqPrinciple":"principle name","explanation":"why better"}],"strengths":[{"quote":"exact words","explanation":"why effective"}],"coaching":"specific NEPQ techniques, phrases to use, what to stop/start doing"}`;
 
 /* ─── Helpers ─── */
@@ -391,22 +391,26 @@ export default function Page() {
 
       let text = resData.content?.[0]?.text || "";
       text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      // If truncated, trim back to last complete property and close all brackets
       if (resData.stop_reason === "max_tokens") {
-        // Attempt to repair truncated JSON by closing open strings, arrays, objects
-        let repaired = text;
-        // Close any unterminated string
-        const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
-        if (quoteCount % 2 !== 0) repaired += '"';
-        // Close open brackets/braces
-        const opens = (repaired.match(/[{[]/g) || []).length;
-        const closes = (repaired.match(/[}\]]/g) || []).length;
-        for (let i = 0; i < opens - closes; i++) {
-          // Determine what to close based on last unclosed opener
-          const lastBrace = repaired.lastIndexOf("{");
-          const lastBracket = repaired.lastIndexOf("[");
-          repaired += lastBracket > lastBrace ? "]" : "}";
+        // Remove any trailing partial value (after last complete key:value pair)
+        text = text.replace(/,\s*"[^"]*"?\s*:\s*("[^"]*)?$/s, "");
+        text = text.replace(/,\s*\{[^}]*$/s, "");
+        text = text.replace(/,\s*"[^"]*$/s, "");
+        // Close open structures using a stack
+        const stack: string[] = [];
+        let inString = false, escaped = false;
+        for (const ch of text) {
+          if (escaped) { escaped = false; continue; }
+          if (ch === "\\") { escaped = true; continue; }
+          if (ch === '"') { inString = !inString; continue; }
+          if (inString) continue;
+          if (ch === "{") stack.push("}");
+          else if (ch === "[") stack.push("]");
+          else if (ch === "}" || ch === "]") stack.pop();
         }
-        text = repaired;
+        if (inString) text += '"';
+        while (stack.length) text += stack.pop();
       }
       const analysis: AnalysisResult = JSON.parse(text);
 
