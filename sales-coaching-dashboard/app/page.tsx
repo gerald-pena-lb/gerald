@@ -275,103 +275,80 @@ export default function Page() {
   }
 
   /* ─── Call Actions ─── */
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!selectedAgent || !e.target.files) return;
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    const agentId = selectedAgent.id;
+  const [pasteText, setPasteText] = useState("");
+  const [showPaste, setShowPaste] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  function addCalls(agentId: string, calls: Call[]) {
+    if (!calls.length) return;
+    setData((prev) => {
+      const updated = {
+        agents: prev.agents.map((a) =>
+          a.id === agentId ? { ...a, calls: [...a.calls, ...calls] } : a
+        ),
+      };
+      saveData(updated);
+      return updated;
+    });
+  }
+
+  function processFiles(files: File[], agentId: string) {
     const newCalls: Call[] = [];
     let loaded = 0;
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
-        if (!text?.trim()) return;
-        newCalls.push({
-          id: uid(),
-          date: new Date().toISOString(),
-          fileName: file.name,
-          transcript: text,
-          analysis: null,
-          outcome: "",
-        });
-        loaded++;
-        if (loaded === files.length) {
-          setData((prev) => {
-            const updated = {
-              agents: prev.agents.map((a) =>
-                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
-              ),
-            };
-            saveData(updated);
-            return updated;
+        if (text?.trim()) {
+          newCalls.push({
+            id: uid(),
+            date: new Date().toISOString(),
+            fileName: file.name,
+            transcript: text,
+            analysis: null,
+            outcome: "",
           });
         }
+        loaded++;
+        if (loaded === files.length) addCalls(agentId, newCalls);
       };
       reader.onerror = () => {
         loaded++;
-        alert(`Failed to read file: ${file.name}`);
-        if (loaded === files.length && newCalls.length > 0) {
-          setData((prev) => {
-            const updated = {
-              agents: prev.agents.map((a) =>
-                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
-              ),
-            };
-            saveData(updated);
-            return updated;
-          });
-        }
+        if (loaded === files.length) addCalls(agentId, newCalls);
       };
       reader.readAsText(file);
     });
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!selectedAgent || !e.target.files) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    processFiles(files, selectedAgent.id);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
+    setDragOver(false);
     if (!selectedAgent) return;
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      /\.(txt|md|csv|json)$/i.test(f.name)
-    );
-    if (!files.length) {
-      alert("Please drop text files (.txt, .md, .csv, .json)");
-      return;
-    }
-    const agentId = selectedAgent.id;
-    const newCalls: Call[] = [];
-    let loaded = 0;
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        if (!text?.trim()) return;
-        newCalls.push({
-          id: uid(),
-          date: new Date().toISOString(),
-          fileName: file.name,
-          transcript: text,
-          analysis: null,
-          outcome: "",
-        });
-        loaded++;
-        if (loaded === files.length) {
-          setData((prev) => {
-            const updated = {
-              agents: prev.agents.map((a) =>
-                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
-              ),
-            };
-            saveData(updated);
-            return updated;
-          });
-        }
-      };
-      reader.onerror = () => {
-        loaded++;
-      };
-      reader.readAsText(file);
-    });
+    const files = Array.from(e.dataTransfer.files);
+    if (!files.length) return;
+    processFiles(files, selectedAgent.id);
+  }
+
+  function handlePasteSubmit() {
+    if (!selectedAgent || !pasteText.trim()) return;
+    addCalls(selectedAgent.id, [{
+      id: uid(),
+      date: new Date().toISOString(),
+      fileName: `Pasted ${new Date().toLocaleString()}`,
+      transcript: pasteText.trim(),
+      analysis: null,
+      outcome: "",
+    }]);
+    setPasteText("");
+    setShowPaste(false);
   }
 
   function setOutcome(agentId: string, callId: string, outcome: string) {
@@ -676,24 +653,93 @@ export default function Page() {
             })()}
 
             {/* Upload Area */}
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: `2px dashed ${COLORS.primary}`,
-                borderRadius: 12,
-                padding: 32,
-                textAlign: "center",
-                cursor: "pointer",
-                background: COLORS.primaryLight,
-                marginBottom: 24,
-              }}
-            >
-              <div style={{ fontSize: 32, marginBottom: 8 }}>&#128196;</div>
-              <div style={{ fontWeight: 600, color: COLORS.primary }}>Drop transcript files here or click to browse</div>
-              <div style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 4 }}>Each file = one call</div>
-              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.text" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+            <div style={{ marginBottom: 24 }}>
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: `2px dashed ${dragOver ? COLORS.primary : "#c7d2fe"}`,
+                  borderRadius: 12,
+                  padding: 28,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: dragOver ? "#e0e7ff" : COLORS.primaryLight,
+                  transition: "all 0.2s",
+                }}
+              >
+                <div style={{ fontSize: 28, marginBottom: 6 }}>&#128196;</div>
+                <div style={{ fontWeight: 600, color: COLORS.primary, fontSize: 14 }}>Drop files here or click to browse</div>
+                <div style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 4 }}>Supports .txt, .md, .csv, .json</div>
+                <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.text" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+              </div>
+
+              <div style={{ textAlign: "center", margin: "12px 0", fontSize: 12, color: COLORS.textSecondary, fontWeight: 600 }}>OR</div>
+
+              {!showPaste ? (
+                <button
+                  onClick={() => setShowPaste(true)}
+                  style={{
+                    width: "100%",
+                    padding: "14px 20px",
+                    border: `1px solid ${COLORS.border}`,
+                    borderRadius: 12,
+                    background: COLORS.white,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: COLORS.primary,
+                  }}
+                >
+                  &#9998; Paste transcript text
+                </button>
+              ) : (
+                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden", background: COLORS.white }}>
+                  <textarea
+                    autoFocus
+                    value={pasteText}
+                    onChange={(e) => setPasteText(e.target.value)}
+                    placeholder="Paste your transcript here..."
+                    style={{
+                      width: "100%",
+                      minHeight: 150,
+                      padding: 16,
+                      border: "none",
+                      outline: "none",
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "8px 12px", borderTop: `1px solid ${COLORS.border}`, background: "#f9fafb" }}>
+                    <button
+                      onClick={() => { setShowPaste(false); setPasteText(""); }}
+                      style={{ padding: "8px 16px", border: `1px solid ${COLORS.border}`, borderRadius: 8, background: COLORS.white, cursor: "pointer", fontSize: 13 }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handlePasteSubmit}
+                      disabled={!pasteText.trim()}
+                      style={{
+                        padding: "8px 20px",
+                        border: "none",
+                        borderRadius: 8,
+                        background: pasteText.trim() ? COLORS.primary : "#c7d2fe",
+                        color: COLORS.white,
+                        cursor: pasteText.trim() ? "pointer" : "not-allowed",
+                        fontWeight: 600,
+                        fontSize: 13,
+                      }}
+                    >
+                      Add Transcript
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Calls List */}
