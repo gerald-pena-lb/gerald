@@ -279,9 +279,15 @@ export default function Page() {
     try {
       const res = await fetch("/api/agents");
       const json = await res.json();
-      if (res.ok) setData({ agents: json.agents });
+      if (res.ok) {
+        setData({ agents: json.agents });
+      } else {
+        console.error("API error:", json);
+        alert("Failed to load agents: " + (json.error || "Unknown error"));
+      }
     } catch (err) {
       console.error("Failed to load data:", err);
+      alert("Failed to connect to API: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
       setLoading(false);
     }
