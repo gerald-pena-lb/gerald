@@ -1,10 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonrepair } from "jsonrepair";
 
-const SYSTEM_PROMPT = `Sales coach using NEPQ (Jeremy Miner). Return ONLY valid JSON, no markdown.
-NEPQ: Connection (trust/rapport), Situation (current state), Problem Awareness (discover pain), Solution Awareness (see the fix), Consequence (cost of inaction), Commitment (trial close).
-Score 1-10 each. Keep ALL text fields under 15 words. Max 2 excerpts, 2 strengths. Coaching under 30 words.
-JSON format: {"overallScore":0,"maxScore":70,"summary":"1-2 sentences","categories":[{"name":"Connection & Rapport","score":0,"maxScore":10,"assessment":"brief"},{"name":"Situation Questions","score":0,"maxScore":10,"assessment":"brief"},{"name":"Problem Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Solution Awareness","score":0,"maxScore":10,"assessment":"brief"},{"name":"Objection Handling","score":0,"maxScore":10,"assessment":"brief"},{"name":"Closing & Commitment","score":0,"maxScore":10,"assessment":"brief"},{"name":"Tone & Listening","score":0,"maxScore":10,"assessment":"brief"}],"excerpts":[{"type":"improvement","label":"issue label","quote":"exact transcript words","rewrite":"NEPQ phrasing","nepqPrinciple":"principle name","explanation":"why better"}],"strengths":[{"quote":"exact words","explanation":"why effective"}],"coaching":"specific NEPQ techniques, phrases to use, what to stop/start doing"}`;
+const SYSTEM_PROMPT = `You are a sales coach using NEPQ (Jeremy Miner). Return ONLY a valid JSON object. No markdown, no code fences, no explanation.
+
+CRITICAL: Keep your response SHORT. Every text field must be under 12 words. Use abbreviations freely.
+
+JSON schema:
+{"overallScore":N,"maxScore":70,"summary":"1 sentence max","categories":[{"name":"Connection & Rapport","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Situation Questions","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Problem Awareness","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Solution Awareness","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Objection Handling","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Closing & Commitment","score":N,"maxScore":10,"assessment":"<8 words>"},{"name":"Tone & Listening","score":N,"maxScore":10,"assessment":"<8 words>"}],"excerpts":[{"type":"improvement","label":"3 words","quote":"short exact quote","rewrite":"NEPQ version","nepqPrinciple":"name","explanation":"<10 words>"}],"strengths":[{"quote":"short exact quote","explanation":"<10 words>"}],"coaching":"<20 words max>"}
+
+Return exactly 2 excerpts and 2 strengths. Keep quotes under 15 words.`;
+
+function tryParseAnalysis(text: string): Record<string, unknown> {
+  // Strip markdown fences
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+
+  // If JSON is truncated, try to close it
+  // Remove trailing incomplete string (ends mid-string without closing quote)
+  const lastComplete = text.replace(/"[^"]*$/, '"');
+
+  // Try multiple repair strategies
+  const attempts = [text, lastComplete];
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(jsonrepair(attempt));
+    } catch {
+      // try next
+    }
+  }
+
+  // Last resort: manually close all open brackets
+  let fixed = lastComplete;
+  const opens = (fixed.match(/[{[]/g) || []).length;
+  const closes = (fixed.match(/[}\]]/g) || []).length;
+  const missing = opens - closes;
+  // Remove any trailing comma or colon
+  fixed = fixed.replace(/[,:]\s*$/, "");
+  for (let i = 0; i < missing; i++) {
+    // Guess bracket type from context - scan backwards
+    const lastOpen = Math.max(fixed.lastIndexOf("{"), fixed.lastIndexOf("["));
+    if (lastOpen >= 0 && fixed[lastOpen] === "[") {
+      fixed += "]";
+    } else {
+      fixed += "}";
+    }
+  }
+
+  try {
+    return JSON.parse(jsonrepair(fixed));
+  } catch {
+    throw new Error("Could not parse Claude response as JSON");
+  }
+}
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -21,7 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
     }
 
-    const trimmed = transcript.slice(0, 6000);
+    const trimmed = transcript.slice(0, 4000);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
 
@@ -34,9 +80,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 8192,
+        max_tokens: 4096,
         system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: `Analyze this sales call transcript:\n\n${trimmed}` }],
+        messages: [{ role: "user", content: `Analyze this sales call:\n\n${trimmed}` }],
       }),
       signal: controller.signal,
     });
@@ -48,11 +94,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.error?.message || "API error" }, { status: response.status });
     }
 
-    let text = data.content?.[0]?.text || "";
-    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    const text = data.content?.[0]?.text || "";
+    const stopReason = data.stop_reason;
 
-    // Repair and parse JSON server-side
-    const analysis = JSON.parse(jsonrepair(text));
+    // Log for debugging
+    console.log(`Claude response: stop_reason=${stopReason}, length=${text.length}`);
+
+    if (!text) {
+      return NextResponse.json({ error: "Empty response from Claude" }, { status: 500 });
+    }
+
+    const analysis = tryParseAnalysis(text);
 
     return NextResponse.json({ analysis });
   } catch (error: unknown) {
