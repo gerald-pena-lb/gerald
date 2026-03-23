@@ -64,12 +64,14 @@ Total max: 66. Bookable Quality: 56-66. Needs Improvement: 46-55. Mandatory Coac
 ## OUTPUT REQUIREMENTS
 Use this checklist as your guide for robust analysis. You MUST output:
 - Score each of the 6 stages individually
-- Provide exactly 3 specific transcript moments that need improvement (with NEPQ rewrites)
-- Provide exactly 2 things the agent did well (with transcript evidence)
+- For EACH stage, provide detailed feedback based on its performance:
+  - RED stages (below 40% of max): Provide a transcript example showing what went wrong, explain what was NOT done that should have been, and give a specific suggestion with example phrasing for how to handle it
+  - AMBER stages (40-69% of max): Explain what was attempted, what fell short, and give specific actions/phrasing to reach green
+  - GREEN stages (70%+ of max): Highlight what the agent did well with a transcript quote as evidence
 - Note any automatic coaching flags triggered
 - Give a detailed coaching recommendation
 
-For each excerpt, identify the approximate timestamp or position (e.g. "2:15" or "Opening"/"Mid-call"/"Closing"), specify which stage it falls under, and include surrounding transcript context (2-4 lines before/after with speaker labels).
+For transcript examples, include the approximate position (e.g. "Opening", "Mid-call", "Closing") and 2-4 lines of surrounding context with speaker labels.
 
 Keep quote fields to the essential phrase only (under 20 words). Assessment fields under 12 words.`;
 
@@ -79,53 +81,26 @@ const ANALYSIS_TOOL = {
   description: "Submit the NEPQ sales call analysis based on the 6-stage Leaders Brands QA Checklist",
   input_schema: {
     type: "object" as const,
-    required: ["overallScore", "maxScore", "summary", "categories", "excerpts", "strengths", "coachingFlags", "coaching"],
+    required: ["overallScore", "maxScore", "summary", "categories", "coachingFlags", "coaching"],
     properties: {
       overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 66)" },
       maxScore: { type: "number" as const, description: "Always 66" },
       summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (56-66), Needs Improvement (46-55), or Mandatory Coaching (below 46)." },
       categories: {
         type: "array" as const,
-        description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call",
+        description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call. Each stage includes detailed feedback.",
         items: {
           type: "object" as const,
-          required: ["name", "score", "maxScore", "assessment"],
+          required: ["name", "score", "maxScore", "assessment", "transcriptQuote", "transcriptContext", "feedback"],
           properties: {
             name: { type: "string" as const, description: "Stage name, e.g. 'Stage 1 — Connect'" },
             score: { type: "number" as const, description: "Stage score" },
             maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 10" },
             assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
-          },
-        },
-      },
-      excerpts: {
-        type: "array" as const,
-        description: "Exactly 3 specific transcript moments that need improvement",
-        items: {
-          type: "object" as const,
-          required: ["type", "label", "quote", "rewrite", "nepqPrinciple", "explanation", "timestamp", "scriptSection", "transcriptContext"],
-          properties: {
-            type: { type: "string" as const, enum: ["improvement"], description: "Always improvement" },
-            label: { type: "string" as const, description: "Short label for the issue (3-5 words)" },
-            timestamp: { type: "string" as const, description: "Approximate timestamp or position label (e.g. 'Opening', 'Mid-call', 'Closing')" },
-            scriptSection: { type: "string" as const, description: "Which stage: Connect, Situation, Problem, Consequence, Open Wallet Test, or Book the Call" },
-            quote: { type: "string" as const, description: "What the agent actually said (under 20 words)" },
-            rewrite: { type: "string" as const, description: "How to rephrase it using NEPQ principles" },
-            nepqPrinciple: { type: "string" as const, description: "Which NEPQ principle applies" },
-            explanation: { type: "string" as const, description: "Why the rewrite is more effective (1-2 sentences)" },
-            transcriptContext: { type: "string" as const, description: "2-4 lines before and after the key moment with speaker labels" },
-          },
-        },
-      },
-      strengths: {
-        type: "array" as const,
-        description: "Exactly 2 things the agent did well, with transcript evidence",
-        items: {
-          type: "object" as const,
-          required: ["quote", "explanation"],
-          properties: {
-            quote: { type: "string" as const, description: "What the agent said that was effective (under 20 words)" },
-            explanation: { type: "string" as const, description: "Why this was effective from an NEPQ perspective (1-2 sentences)" },
+            transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For red/amber: what the agent said that was problematic. For green: what the agent said that was effective." },
+            transcriptContext: { type: "string" as const, description: "2-4 lines of surrounding transcript context with speaker labels" },
+            feedback: { type: "string" as const, description: "For RED stages (<40%): What was NOT done + specific suggestion with example phrasing. For AMBER stages (40-69%): What was attempted but fell short + specific actions to reach green. For GREEN stages (70%+): Why this was effective from an NEPQ perspective." },
+            suggestion: { type: "string" as const, description: "For red/amber stages: A specific example phrase the agent should use next time. For green stages: leave empty string." },
           },
         },
       },
@@ -165,7 +140,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 4096,
+          max_tokens: 6000,
           system: SYSTEM_PROMPT,
           tools: [ANALYSIS_TOOL],
           tool_choice: { type: "tool", name: "submit_analysis" },

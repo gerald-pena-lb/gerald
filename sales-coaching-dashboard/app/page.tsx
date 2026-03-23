@@ -29,23 +29,10 @@ interface AnalysisCategory {
   score: number;
   maxScore: number;
   assessment: string;
-}
-
-interface Excerpt {
-  type: string;
-  label: string;
-  timestamp: string;
-  scriptSection: string;
-  quote: string;
-  rewrite: string;
-  nepqPrinciple: string;
-  explanation: string;
-  transcriptContext: string;
-}
-
-interface Strength {
-  quote: string;
-  explanation: string;
+  transcriptQuote?: string;
+  transcriptContext?: string;
+  feedback?: string;
+  suggestion?: string;
 }
 
 interface AnalysisResult {
@@ -53,8 +40,6 @@ interface AnalysisResult {
   maxScore: number;
   summary: string;
   categories: AnalysisCategory[];
-  excerpts: Excerpt[];
-  strengths: Strength[];
   coachingFlags?: string[];
   coaching: string;
 }
@@ -181,7 +166,69 @@ function TranscriptContext({ context }: { context: string }) {
   );
 }
 
+function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
+  const pct = cat.maxScore > 0 ? cat.score / cat.maxScore : 0;
+  const color = scoreColor(pct);
+  const isRed = pct < 0.4;
+  const isAmber = pct >= 0.4 && pct < 0.7;
+  const isGreen = pct >= 0.7;
+
+  const borderColor = isRed ? COLORS.red : isAmber ? COLORS.yellow : COLORS.green;
+  const statusLabel = isRed ? "Needs Work" : isAmber ? "Almost There" : "Strong";
+  const statusBg = isRed ? COLORS.redLight : isAmber ? COLORS.yellowLight : COLORS.greenLight;
+  const statusTextColor = isRed ? "#991b1b" : isAmber ? "#92400e" : "#065f46";
+
+  return (
+    <div style={{ borderLeft: `4px solid ${borderColor}`, borderRadius: 8, padding: 16, marginBottom: 12, background: COLORS.white, border: `1px solid ${COLORS.border}`, borderLeftColor: borderColor, borderLeftWidth: 4 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 700, fontSize: 15 }}>{cat.name}</span>
+        <span style={{ fontWeight: 700, color, fontSize: 14 }}>{cat.score}/{cat.maxScore}</span>
+        <span style={{ background: statusBg, color: statusTextColor, fontSize: 11, padding: "2px 10px", borderRadius: 12, fontWeight: 700 }}>
+          {statusLabel}
+        </span>
+      </div>
+
+      <ProgressBar value={cat.score} max={cat.maxScore} />
+      <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8, marginBottom: 10 }}>{cat.assessment}</div>
+
+      {/* Transcript quote */}
+      {cat.transcriptQuote && (
+        <div style={{
+          background: isGreen ? COLORS.greenLight : isAmber ? COLORS.yellowLight : COLORS.redLight,
+          padding: 12, borderRadius: 6, fontStyle: "italic", fontSize: 13, marginBottom: 8,
+          color: isGreen ? "#065f46" : isAmber ? "#92400e" : "#991b1b",
+        }}>
+          {isGreen ? "What worked: " : "From the call: "}&ldquo;{cat.transcriptQuote}&rdquo;
+        </div>
+      )}
+
+      {/* Feedback */}
+      {cat.feedback && (
+        <div style={{ fontSize: 13, color: COLORS.textPrimary, lineHeight: 1.6, marginBottom: 8 }}>
+          {cat.feedback}
+        </div>
+      )}
+
+      {/* Suggestion for red/amber */}
+      {cat.suggestion && (
+        <div style={{ background: COLORS.blueLight, padding: 12, borderRadius: 6, fontSize: 13, color: "#1e40af" }}>
+          <strong>Try this:</strong> &ldquo;{cat.suggestion}&rdquo;
+        </div>
+      )}
+
+      {/* Expandable transcript context */}
+      <TranscriptContext context={cat.transcriptContext || ""} />
+    </div>
+  );
+}
+
 function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
+  const cats = analysis.categories || [];
+  const redStages = cats.filter((c) => c.score / c.maxScore < 0.4);
+  const amberStages = cats.filter((c) => { const p = c.score / c.maxScore; return p >= 0.4 && p < 0.7; });
+  const greenStages = cats.filter((c) => c.score / c.maxScore >= 0.7);
+
   return (
     <div style={{ marginTop: 16 }}>
       {/* Overall Score */}
@@ -193,9 +240,9 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         </div>
       </div>
 
-      {/* Category Scores */}
+      {/* Category Score Overview */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginBottom: 24 }}>
-        {analysis.categories?.map((cat, i) => (
+        {cats.map((cat, i) => (
           <div key={i} style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontWeight: 600, fontSize: 14 }}>{cat.name}</span>
@@ -207,52 +254,30 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         ))}
       </div>
 
-      {/* Excerpts to Improve */}
-      {analysis.excerpts?.length > 0 && (
+      {/* Red Stages — Critical Issues */}
+      {redStages.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Transcript Moments to Improve</h3>
-          {analysis.excerpts.map((ex, i) => (
-            <div key={i} style={{ borderLeft: `4px solid ${COLORS.red}`, borderRadius: 8, padding: 16, marginBottom: 12, background: COLORS.white, border: `1px solid ${COLORS.border}`, borderLeftColor: COLORS.red, borderLeftWidth: 4 }}>
-              {/* Header row: label + badges */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{ex.label}</span>
-                {ex.timestamp && (
-                  <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>
-                    {ex.timestamp}
-                  </span>
-                )}
-                {ex.scriptSection && (
-                  <span style={{ background: "#e0e7ff", color: "#3730a3", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>
-                    {ex.scriptSection}
-                  </span>
-                )}
-                <span style={{ background: "#ede9fe", color: "#7c3aed", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>{ex.nepqPrinciple}</span>
-              </div>
-              {/* What agent said */}
-              <div style={{ background: COLORS.redLight, padding: 12, borderRadius: 6, fontStyle: "italic", fontSize: 13, marginBottom: 8, color: "#991b1b" }}>&ldquo;{ex.quote}&rdquo;</div>
-              {/* Better approach */}
-              <div style={{ background: COLORS.blueLight, padding: 12, borderRadius: 6, fontSize: 13, marginBottom: 8, color: "#1e40af" }}>
-                <strong>Better approach:</strong> &ldquo;{ex.rewrite}&rdquo;
-              </div>
-              {/* Explanation */}
-              <div style={{ fontSize: 13, color: COLORS.textSecondary }}>{ex.explanation}</div>
-              {/* Expandable transcript context */}
-              <TranscriptContext context={ex.transcriptContext} />
-            </div>
-          ))}
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.red }}>Critical — Needs Immediate Coaching</h3>
+          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages scored below 40%. Focus coaching here first.</div>
+          {redStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
         </div>
       )}
 
-      {/* Strengths */}
-      {analysis.strengths?.length > 0 && (
+      {/* Amber Stages — Improvement Areas */}
+      {amberStages.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>What Worked Well</h3>
-          {analysis.strengths.map((s, i) => (
-            <div key={i} style={{ borderLeft: `4px solid ${COLORS.green}`, borderRadius: 8, padding: 16, marginBottom: 12, background: COLORS.white, border: `1px solid ${COLORS.border}`, borderLeftColor: COLORS.green, borderLeftWidth: 4 }}>
-              <div style={{ background: COLORS.greenLight, padding: 12, borderRadius: 6, fontStyle: "italic", fontSize: 13, marginBottom: 8, color: "#065f46" }}>&ldquo;{s.quote}&rdquo;</div>
-              <div style={{ fontSize: 13, color: COLORS.textSecondary }}>{s.explanation}</div>
-            </div>
-          ))}
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.yellow }}>Almost There — Close to Passing</h3>
+          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are in range but need refinement to reach green.</div>
+          {amberStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
+        </div>
+      )}
+
+      {/* Green Stages — What Worked Well */}
+      {greenStages.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.green }}>Strong — What Worked Well</h3>
+          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages met or exceeded the pass threshold. Keep it up.</div>
+          {greenStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
         </div>
       )}
 
