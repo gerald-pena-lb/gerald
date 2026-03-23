@@ -57,7 +57,6 @@ interface AnalysisResult {
 }
 
 /* ─── Constants ─── */
-const STORAGE_KEY = "sales_coaching_v2";
 const COLORS = {
   primary: "#4f46e5",
   primaryLight: "#e0e7ff",
@@ -86,22 +85,6 @@ const OUTCOMES = [
 
 
 /* ─── Helpers ─── */
-function loadData(): AppData {
-  if (typeof window === "undefined") return { agents: [] };
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { agents: [] };
-}
-
-function saveData(data: AppData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
 
 function getWeekRange(weekStr: string) {
   const [year, week] = weekStr.split("-W").map(Number);
@@ -284,6 +267,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
 /* ─── Main App ─── */
 export default function Page() {
   const [data, setData] = useState<AppData>({ agents: [] });
+  const [loading, setLoading] = useState(true);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [weekFilter, setWeekFilter] = useState("");
   const [expandedAnalysis, setExpandedAnalysis] = useState<Record<string, boolean>>({});
@@ -291,29 +275,52 @@ export default function Page() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setData(loadData());
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/agents");
+      const json = await res.json();
+      if (res.ok) setData({ agents: json.agents });
+    } catch (err) {
+      console.error("Failed to load data:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const persist = useCallback((newData: AppData) => {
-    setData(newData);
-    saveData(newData);
-  }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const selectedAgent = data.agents.find((a) => a.id === selectedAgentId) || null;
 
   /* ─── Agent Actions ─── */
-  function addAgent() {
+  async function addAgent() {
     const name = prompt("Enter agent name:");
     if (!name?.trim()) return;
-    const agent: Agent = { id: uid(), name: name.trim(), calls: [], createdAt: new Date().toISOString() };
-    persist({ agents: [...data.agents, agent] });
+    try {
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setData((prev) => ({ agents: [...prev.agents, json.agent] }));
+      }
+    } catch (err) {
+      alert("Failed to add agent: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
   }
 
-  function removeAgent(id: string) {
+  async function removeAgent(id: string) {
     if (!confirm("Remove this agent and all their calls?")) return;
-    persist({ agents: data.agents.filter((a) => a.id !== id) });
-    if (selectedAgentId === id) setSelectedAgentId(null);
+    try {
+      await fetch(`/api/agents?id=${id}`, { method: "DELETE" });
+      setData((prev) => ({ agents: prev.agents.filter((a) => a.id !== id) }));
+      if (selectedAgentId === id) setSelectedAgentId(null);
+    } catch (err) {
+      alert("Failed to remove agent: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
   }
 
   /* ─── Call Actions ─── */
@@ -321,17 +328,27 @@ export default function Page() {
   const [showPaste, setShowPaste] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  function addCalls(agentId: string, calls: Call[]) {
-    if (!calls.length) return;
-    setData((prev) => {
-      const updated = {
-        agents: prev.agents.map((a) =>
-          a.id === agentId ? { ...a, calls: [...a.calls, ...calls] } : a
-        ),
-      };
-      saveData(updated);
-      return updated;
-    });
+  async function saveCallToDb(agentId: string, fileName: string, analysis: AnalysisResult): Promise<Call | null> {
+    try {
+      const res = await fetch("/api/calls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, fileName, analysis }),
+      });
+      const json = await res.json();
+      if (res.ok) return json.call;
+    } catch (err) {
+      console.error("Failed to save call:", err);
+    }
+    return null;
+  }
+
+  function addCallToState(agentId: string, call: Call) {
+    setData((prev) => ({
+      agents: prev.agents.map((a) =>
+        a.id === agentId ? { ...a, calls: [...a.calls, call] } : a
+      ),
+    }));
   }
 
   async function processFiles(files: File[], agentId: string) {
@@ -341,14 +358,8 @@ export default function Page() {
         const text = await file.text();
         if (!text?.trim()) continue;
         const analysis = await analyzeTranscript(text);
-        const call: Call = {
-          id: uid(),
-          date: new Date().toISOString(),
-          fileName: file.name,
-          analysis,
-          outcome: "",
-        };
-        addCalls(agentId, [call]);
+        const call = await saveCallToDb(agentId, file.name, analysis);
+        if (call) addCallToState(agentId, call);
       }
     } catch (err) {
       alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
@@ -383,13 +394,9 @@ export default function Page() {
     setAnalyzingCalls((p) => ({ ...p, [agentId]: true }));
     try {
       const analysis = await analyzeTranscript(text);
-      addCalls(agentId, [{
-        id: uid(),
-        date: new Date().toISOString(),
-        fileName: `Pasted ${new Date().toLocaleString()}`,
-        analysis,
-        outcome: "",
-      }]);
+      const fileName = `Pasted ${new Date().toLocaleString()}`;
+      const call = await saveCallToDb(agentId, fileName, analysis);
+      if (call) addCallToState(agentId, call);
     } catch (err) {
       alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -397,21 +404,43 @@ export default function Page() {
     }
   }
 
-  function setOutcome(agentId: string, callId: string, outcome: string) {
-    const agents = data.agents.map((a) =>
-      a.id === agentId
-        ? { ...a, calls: a.calls.map((c) => (c.id === callId ? { ...c, outcome: c.outcome === outcome ? "" : outcome } : c)) }
-        : a
-    );
-    persist({ agents });
+  async function setOutcome(agentId: string, callId: string, outcome: string) {
+    const agent = data.agents.find((a) => a.id === agentId);
+    const call = agent?.calls.find((c) => c.id === callId);
+    const newOutcome = call?.outcome === outcome ? "" : outcome;
+
+    // Optimistic update
+    setData((prev) => ({
+      agents: prev.agents.map((a) =>
+        a.id === agentId
+          ? { ...a, calls: a.calls.map((c) => (c.id === callId ? { ...c, outcome: newOutcome } : c)) }
+          : a
+      ),
+    }));
+
+    try {
+      await fetch("/api/calls", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: callId, outcome: newOutcome }),
+      });
+    } catch (err) {
+      console.error("Failed to update outcome:", err);
+    }
   }
 
-  function deleteCall(agentId: string, callId: string) {
+  async function deleteCall(agentId: string, callId: string) {
     if (!confirm("Delete this call?")) return;
-    const agents = data.agents.map((a) =>
-      a.id === agentId ? { ...a, calls: a.calls.filter((c) => c.id !== callId) } : a
-    );
-    persist({ agents });
+    try {
+      await fetch(`/api/calls?id=${callId}`, { method: "DELETE" });
+      setData((prev) => ({
+        agents: prev.agents.map((a) =>
+          a.id === agentId ? { ...a, calls: a.calls.filter((c) => c.id !== callId) } : a
+        ),
+      }));
+    } catch (err) {
+      alert("Failed to delete call: " + (err instanceof Error ? err.message : "Unknown error"));
+    }
   }
 
   async function analyzeTranscript(transcript: string): Promise<AnalysisResult> {
@@ -481,6 +510,16 @@ export default function Page() {
   };
 
   /* ─── Render ─── */
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: COLORS.bg }}>
+        <div style={{ textAlign: "center", color: COLORS.textSecondary }}>
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: COLORS.bg }}>
       {/* Mobile menu button */}
