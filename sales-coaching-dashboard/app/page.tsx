@@ -32,10 +32,13 @@ interface AnalysisCategory {
 interface Excerpt {
   type: string;
   label: string;
+  timestamp: string;
+  scriptSection: string;
   quote: string;
   rewrite: string;
   nepqPrinciple: string;
   explanation: string;
+  transcriptContext: string;
 }
 
 interface Strength {
@@ -163,6 +166,35 @@ function ScoreRing({ score, max }: { score: number; max: number }) {
   );
 }
 
+function TranscriptContext({ context }: { context: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!context) return null;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          fontSize: 12, color: COLORS.primary, fontWeight: 600,
+          display: "flex", alignItems: "center", gap: 4,
+        }}
+      >
+        <span style={{ display: "inline-block", transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>&#9654;</span>
+        {expanded ? "Hide transcript context" : "Show transcript context"}
+      </button>
+      {expanded && (
+        <div style={{
+          marginTop: 8, padding: 12, background: "#f9fafb", border: `1px solid ${COLORS.border}`,
+          borderRadius: 6, fontSize: 12, lineHeight: 1.7, color: COLORS.textPrimary,
+          whiteSpace: "pre-wrap", fontFamily: "monospace",
+        }}>
+          {context}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
   return (
     <div style={{ marginTop: 16 }}>
@@ -195,15 +227,31 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Transcript Moments to Improve</h3>
           {analysis.excerpts.map((ex, i) => (
             <div key={i} style={{ borderLeft: `4px solid ${COLORS.red}`, borderRadius: 8, padding: 16, marginBottom: 12, background: COLORS.white, border: `1px solid ${COLORS.border}`, borderLeftColor: COLORS.red, borderLeftWidth: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              {/* Header row: label + badges */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{ex.label}</span>
+                {ex.timestamp && (
+                  <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>
+                    {ex.timestamp}
+                  </span>
+                )}
+                {ex.scriptSection && (
+                  <span style={{ background: "#e0e7ff", color: "#3730a3", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>
+                    {ex.scriptSection}
+                  </span>
+                )}
                 <span style={{ background: "#ede9fe", color: "#7c3aed", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>{ex.nepqPrinciple}</span>
               </div>
+              {/* What agent said */}
               <div style={{ background: COLORS.redLight, padding: 12, borderRadius: 6, fontStyle: "italic", fontSize: 13, marginBottom: 8, color: "#991b1b" }}>&ldquo;{ex.quote}&rdquo;</div>
+              {/* Better approach */}
               <div style={{ background: COLORS.blueLight, padding: 12, borderRadius: 6, fontSize: 13, marginBottom: 8, color: "#1e40af" }}>
                 <strong>Better approach:</strong> &ldquo;{ex.rewrite}&rdquo;
               </div>
+              {/* Explanation */}
               <div style={{ fontSize: 13, color: COLORS.textSecondary }}>{ex.explanation}</div>
+              {/* Expandable transcript context */}
+              <TranscriptContext context={ex.transcriptContext} />
             </div>
           ))}
         </div>

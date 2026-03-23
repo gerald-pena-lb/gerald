@@ -13,6 +13,8 @@ Analyze the sales call transcript and evaluate the agent's performance across th
 
 Score each category 1-10. Provide exactly 3 specific transcript excerpts that need improvement with NEPQ-based rewrites. Provide exactly 2 things the agent did well. Give a detailed coaching recommendation paragraph.
 
+For each excerpt, identify the approximate timestamp or position in the call (e.g. "2:15" or "Opening" / "Mid-call" / "Closing"), specify which part of the sales script it falls under (e.g. "Opening/Rapport", "Discovery", "Presentation", "Objection Handling", "Close"), and include the surrounding transcript context (2-4 lines before and after the key moment).
+
 Keep quote fields to the essential phrase only (under 20 words). Assessment fields under 12 words.`;
 
 // Use Claude tool_use to guarantee valid JSON output
@@ -45,14 +47,17 @@ const ANALYSIS_TOOL = {
         description: "Exactly 3 specific transcript moments that need improvement",
         items: {
           type: "object" as const,
-          required: ["type", "label", "quote", "rewrite", "nepqPrinciple", "explanation"],
+          required: ["type", "label", "quote", "rewrite", "nepqPrinciple", "explanation", "timestamp", "scriptSection", "transcriptContext"],
           properties: {
             type: { type: "string" as const, enum: ["improvement"], description: "Always improvement" },
             label: { type: "string" as const, description: "Short label for the issue (3-5 words)" },
+            timestamp: { type: "string" as const, description: "Approximate timestamp in the call (e.g. '2:15') or position label (e.g. 'Opening', 'Mid-call', 'Closing'). Use timestamps if available in transcript, otherwise use position labels." },
+            scriptSection: { type: "string" as const, description: "Which part of the sales script this falls under. One of: Opening/Rapport, Discovery, Problem Awareness, Solution Presentation, Objection Handling, Close" },
             quote: { type: "string" as const, description: "What the agent actually said (exact or near-exact words from transcript, under 20 words)" },
             rewrite: { type: "string" as const, description: "How to rephrase it using NEPQ principles" },
             nepqPrinciple: { type: "string" as const, description: "Which NEPQ principle applies (e.g. Problem Awareness, Consequence Question)" },
             explanation: { type: "string" as const, description: "Why the rewrite is more effective (1-2 sentences)" },
+            transcriptContext: { type: "string" as const, description: "The surrounding transcript context: 2-4 lines before and after the key moment, showing the full conversational flow. Include speaker labels." },
           },
         },
       },
