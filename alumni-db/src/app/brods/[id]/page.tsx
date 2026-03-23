@@ -233,12 +233,13 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {showDuesForm && (
-          <form onSubmit={handleAddDues} className="bg-gray-50 rounded-md p-4 mb-4 grid grid-cols-2 gap-3">
+          <form onSubmit={handleAddDues} className="bg-gray-50 rounded-md p-4 mb-4 grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Year *</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Fiscal Year *</label>
               <input
                 type="number"
                 required
+                placeholder={new Date().getFullYear().toString()}
                 value={duesForm.year}
                 onChange={(e) => setDuesForm((f) => ({ ...f, year: e.target.value }))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
@@ -265,7 +266,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               />
             </div>
-            <div>
+            <div className="col-span-3">
               <label className="block text-xs font-medium text-gray-600 mb-1">Remarks</label>
               <input
                 type="text"
@@ -274,7 +275,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-3">
               <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">
                 Save
               </button>
@@ -285,7 +286,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Year</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Fiscal Year</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Amount</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date Paid</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Remarks</th>
