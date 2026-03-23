@@ -381,7 +381,7 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 1500,
+          max_tokens: 4096,
           system: SYSTEM_PROMPT,
           messages: [{ role: "user", content: `Analyze this sales call transcript:\n\n${transcript}` }],
         }),

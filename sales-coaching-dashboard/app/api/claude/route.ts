@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 24000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
