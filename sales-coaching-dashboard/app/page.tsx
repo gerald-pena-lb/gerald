@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { jsonrepair } from "jsonrepair";
 
 /* ─── Types ─── */
 interface Call {
@@ -391,28 +392,7 @@ export default function Page() {
 
       let text = resData.content?.[0]?.text || "";
       text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-      // If truncated, trim back to last complete property and close all brackets
-      if (resData.stop_reason === "max_tokens") {
-        // Remove any trailing partial value (after last complete key:value pair)
-        text = text.replace(/,\s*"[^"]*"?\s*:\s*("[^"]*)?$/, "");
-        text = text.replace(/,\s*\{[^}]*$/, "");
-        text = text.replace(/,\s*"[^"]*$/, "");
-        // Close open structures using a stack
-        const stack: string[] = [];
-        let inString = false, escaped = false;
-        for (const ch of text) {
-          if (escaped) { escaped = false; continue; }
-          if (ch === "\\") { escaped = true; continue; }
-          if (ch === '"') { inString = !inString; continue; }
-          if (inString) continue;
-          if (ch === "{") stack.push("}");
-          else if (ch === "[") stack.push("]");
-          else if (ch === "}" || ch === "]") stack.pop();
-        }
-        if (inString) text += '"';
-        while (stack.length) text += stack.pop();
-      }
-      const analysis: AnalysisResult = JSON.parse(text);
+      const analysis: AnalysisResult = JSON.parse(jsonrepair(text));
 
       const agents = data.agents.map((a) =>
         a.id === agentId
