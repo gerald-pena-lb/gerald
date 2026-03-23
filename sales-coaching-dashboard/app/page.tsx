@@ -278,25 +278,49 @@ export default function Page() {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!selectedAgent || !e.target.files) return;
     const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const agentId = selectedAgent.id;
     const newCalls: Call[] = [];
     let loaded = 0;
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        if (!text?.trim()) return;
         newCalls.push({
           id: uid(),
           date: new Date().toISOString(),
           fileName: file.name,
-          transcript: ev.target?.result as string,
+          transcript: text,
           analysis: null,
           outcome: "",
         });
         loaded++;
         if (loaded === files.length) {
-          const agents = data.agents.map((a) =>
-            a.id === selectedAgent.id ? { ...a, calls: [...a.calls, ...newCalls] } : a
-          );
-          persist({ agents });
+          setData((prev) => {
+            const updated = {
+              agents: prev.agents.map((a) =>
+                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
+              ),
+            };
+            saveData(updated);
+            return updated;
+          });
+        }
+      };
+      reader.onerror = () => {
+        loaded++;
+        alert(`Failed to read file: ${file.name}`);
+        if (loaded === files.length && newCalls.length > 0) {
+          setData((prev) => {
+            const updated = {
+              agents: prev.agents.map((a) =>
+                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
+              ),
+            };
+            saveData(updated);
+            return updated;
+          });
         }
       };
       reader.readAsText(file);
@@ -307,28 +331,44 @@ export default function Page() {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     if (!selectedAgent) return;
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".txt"));
-    if (!files.length) return;
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      /\.(txt|md|csv|json)$/i.test(f.name)
+    );
+    if (!files.length) {
+      alert("Please drop text files (.txt, .md, .csv, .json)");
+      return;
+    }
+    const agentId = selectedAgent.id;
     const newCalls: Call[] = [];
     let loaded = 0;
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        if (!text?.trim()) return;
         newCalls.push({
           id: uid(),
           date: new Date().toISOString(),
           fileName: file.name,
-          transcript: ev.target?.result as string,
+          transcript: text,
           analysis: null,
           outcome: "",
         });
         loaded++;
         if (loaded === files.length) {
-          const agents = data.agents.map((a) =>
-            a.id === selectedAgent.id ? { ...a, calls: [...a.calls, ...newCalls] } : a
-          );
-          persist({ agents });
+          setData((prev) => {
+            const updated = {
+              agents: prev.agents.map((a) =>
+                a.id === agentId ? { ...a, calls: [...a.calls, ...newCalls] } : a
+              ),
+            };
+            saveData(updated);
+            return updated;
+          });
         }
+      };
+      reader.onerror = () => {
+        loaded++;
       };
       reader.readAsText(file);
     });
@@ -651,9 +691,9 @@ export default function Page() {
               }}
             >
               <div style={{ fontSize: 32, marginBottom: 8 }}>&#128196;</div>
-              <div style={{ fontWeight: 600, color: COLORS.primary }}>Drop .txt transcript files here or click to browse</div>
+              <div style={{ fontWeight: 600, color: COLORS.primary }}>Drop transcript files here or click to browse</div>
               <div style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 4 }}>Each file = one call</div>
-              <input ref={fileInputRef} type="file" accept=".txt" multiple onChange={handleFileUpload} style={{ display: "none" }} />
+              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.text" multiple onChange={handleFileUpload} style={{ display: "none" }} />
             </div>
 
             {/* Calls List */}
