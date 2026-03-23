@@ -31,6 +31,8 @@ export async function GET() {
         id: c.id,
         date: c.created_at,
         fileName: c.file_name,
+        prospectName: c.prospect_name || "",
+        callDate: c.call_date || "",
         outcome: c.outcome,
         analysis: c.analysis,
       })),

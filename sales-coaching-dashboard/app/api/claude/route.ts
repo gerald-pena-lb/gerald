@@ -1,43 +1,99 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an expert sales coach specializing in NEPQ (Neuro-Emotional Persuasion Questions) by Jeremy Miner.
+const SYSTEM_PROMPT = `You are an expert sales coach specializing in NEPQ (Neuro-Emotional Persuasion Questions) by Jeremy Miner, specifically trained on the Leaders Brands Setter Call QA Checklist.
 
-Analyze the sales call transcript and evaluate the agent's performance across the NEPQ framework:
-- Connection & Rapport: Building trust and genuine connection
-- Situation Questions: Understanding the prospect's current state
-- Problem Awareness: Helping prospect discover their pain points
-- Solution Awareness: Guiding prospect to see the fix
-- Objection Handling: Addressing concerns using NEPQ techniques
-- Closing & Commitment: Trial closes and commitment questions
-- Tone & Listening: Tonality, active listening, empathy
+Analyze the sales call transcript using the 6-stage NEPQ framework below. Use these stages and their specific criteria as your guide for evaluation. Score each stage based on how well the agent executed the criteria listed.
 
-Score each category 1-10. Provide exactly 3 specific transcript excerpts that need improvement with NEPQ-based rewrites. Provide exactly 2 things the agent did well. Give a detailed coaching recommendation paragraph.
+## STAGE 1 — CONNECT (Max 10 pts, Pass: 7)
+- Opened with LinkedIn reference question ("What was it about your conversation with [teammate] on LinkedIn that caused you to want to book time?")
+- Let prospect answer fully without interrupting
+- Reinforced prospect ownership — they chose to respond, book, and show up
+- Did not accept surface answers — followed up on "just curious" type responses
+- Transitioned into motivation: "Putting aside anything [teammate] told you — what is it about writing a book that's calling to you right now?"
 
-For each excerpt, identify the approximate timestamp or position in the call (e.g. "2:15" or "Opening" / "Mid-call" / "Closing"), specify which part of the sales script it falls under (e.g. "Opening/Rapport", "Discovery", "Presentation", "Objection Handling", "Close"), and include the surrounding transcript context (2-4 lines before and after the key moment).
+## STAGE 2 — SITUATION (Max 10 pts, Pass: 7)
+- Asked what kind of help they're looking for before talking about Leaders Brands
+- Asked what they would use the book for — didn't assume
+- Dug into the why — asked "why is that important to you?"
+- Asked what they're currently doing and how long
+- Did NOT pitch or describe the service unprompted
+
+## STAGE 3 — PROBLEM (Max 14 pts, Pass: 10)
+- Asked what's been happening that made them open to this now
+- Used 1%/99% statistic or equivalent contrast to challenge status quo
+- Asked how long they've been feeling this way
+- Asked about specific trigger event — "usually there's a moment, what was yours?"
+- Challenged status quo: "why not just continue the way things are going?"
+- Did not accept vague answers — followed up for specifics
+- Handled "not the right time" with follow-up questions, not acceptance
+
+## STAGE 4 — CONSEQUENCE (Max 14 pts, Pass: 10)
+- Asked what impact they want their story to have on readers
+- Asked what happens if nothing changes and the book never gets written
+- Used "what happens if your story dies with you" or equivalent
+- Went emotional, not just logical — asked how it feels
+- Asked "would you be okay continuing to feel that way?" and waited
+- Completed rationale test — "what's the main reason you're looking at outside help?"
+- Referenced prospect's specific consequence when handling objections
+
+## STAGE 5 — OPEN WALLET TEST (Max 8 pts, Pass: 6)
+- Used car dealership frame to normalize investment conversation
+- Asked for a range — did NOT give pricing unprompted
+- Handled "I can't afford it" with Mastermind bridge
+- Handled "need to talk to spouse" by offering to include them
+
+## STAGE 6 — BOOK THE CALL (Max 10 pts, Pass: 8)
+- Framed strategy call as prospect's next step toward their goal — not a sales call
+- Committed prospect to reading the case study book before the call
+- Asked prospect to send Alinka pre-call materials
+- Handled "I need to think about it" by pointing back to Stage 4 consequence
+- Confirmed specific date and time — did not leave without booking or clear next action
+
+## SCORING
+Each criteria: 2 = done well/naturally, 1 = attempted but incomplete, 0 = missing/incorrect.
+Total max: 66. Bookable Quality: 56-66. Needs Improvement: 46-55. Mandatory Coaching: below 46.
+
+## AUTOMATIC COACHING FLAGS (regardless of score):
+- Stage 1: Ownership reframe missing
+- Stage 2: Service pitched before problem established
+- Stage 3: Vague answers accepted without follow-up
+- Stage 4: Emotional tie-down skipped
+- Stage 5: Pricing disclosed on setter call
+- Stage 6: Call ended with no booking and no next action
+
+## OUTPUT REQUIREMENTS
+Use this checklist as your guide for robust analysis. You MUST output:
+- Score each of the 6 stages individually
+- Provide exactly 3 specific transcript moments that need improvement (with NEPQ rewrites)
+- Provide exactly 2 things the agent did well (with transcript evidence)
+- Note any automatic coaching flags triggered
+- Give a detailed coaching recommendation
+
+For each excerpt, identify the approximate timestamp or position (e.g. "2:15" or "Opening"/"Mid-call"/"Closing"), specify which stage it falls under, and include surrounding transcript context (2-4 lines before/after with speaker labels).
 
 Keep quote fields to the essential phrase only (under 20 words). Assessment fields under 12 words.`;
 
 // Use Claude tool_use to guarantee valid JSON output
 const ANALYSIS_TOOL = {
   name: "submit_analysis",
-  description: "Submit the NEPQ sales call analysis",
+  description: "Submit the NEPQ sales call analysis based on the 6-stage Leaders Brands QA Checklist",
   input_schema: {
     type: "object" as const,
-    required: ["overallScore", "maxScore", "summary", "categories", "excerpts", "strengths", "coaching"],
+    required: ["overallScore", "maxScore", "summary", "categories", "excerpts", "strengths", "coachingFlags", "coaching"],
     properties: {
-      overallScore: { type: "number" as const, description: "Total score across all categories" },
-      maxScore: { type: "number" as const, description: "Always 70" },
-      summary: { type: "string" as const, description: "1-2 sentence overall assessment" },
+      overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 66)" },
+      maxScore: { type: "number" as const, description: "Always 66" },
+      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (56-66), Needs Improvement (46-55), or Mandatory Coaching (below 46)." },
       categories: {
         type: "array" as const,
-        description: "Exactly 7 NEPQ category scores",
+        description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call",
         items: {
           type: "object" as const,
           required: ["name", "score", "maxScore", "assessment"],
           properties: {
-            name: { type: "string" as const },
-            score: { type: "number" as const, description: "Score 1-10" },
-            maxScore: { type: "number" as const, description: "Always 10" },
+            name: { type: "string" as const, description: "Stage name, e.g. 'Stage 1 — Connect'" },
+            score: { type: "number" as const, description: "Stage score" },
+            maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 10" },
             assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
           },
         },
@@ -51,13 +107,13 @@ const ANALYSIS_TOOL = {
           properties: {
             type: { type: "string" as const, enum: ["improvement"], description: "Always improvement" },
             label: { type: "string" as const, description: "Short label for the issue (3-5 words)" },
-            timestamp: { type: "string" as const, description: "Approximate timestamp in the call (e.g. '2:15') or position label (e.g. 'Opening', 'Mid-call', 'Closing'). Use timestamps if available in transcript, otherwise use position labels." },
-            scriptSection: { type: "string" as const, description: "Which part of the sales script this falls under. One of: Opening/Rapport, Discovery, Problem Awareness, Solution Presentation, Objection Handling, Close" },
-            quote: { type: "string" as const, description: "What the agent actually said (exact or near-exact words from transcript, under 20 words)" },
+            timestamp: { type: "string" as const, description: "Approximate timestamp or position label (e.g. 'Opening', 'Mid-call', 'Closing')" },
+            scriptSection: { type: "string" as const, description: "Which stage: Connect, Situation, Problem, Consequence, Open Wallet Test, or Book the Call" },
+            quote: { type: "string" as const, description: "What the agent actually said (under 20 words)" },
             rewrite: { type: "string" as const, description: "How to rephrase it using NEPQ principles" },
-            nepqPrinciple: { type: "string" as const, description: "Which NEPQ principle applies (e.g. Problem Awareness, Consequence Question)" },
+            nepqPrinciple: { type: "string" as const, description: "Which NEPQ principle applies" },
             explanation: { type: "string" as const, description: "Why the rewrite is more effective (1-2 sentences)" },
-            transcriptContext: { type: "string" as const, description: "The surrounding transcript context: 2-4 lines before and after the key moment, showing the full conversational flow. Include speaker labels." },
+            transcriptContext: { type: "string" as const, description: "2-4 lines before and after the key moment with speaker labels" },
           },
         },
       },
@@ -73,7 +129,12 @@ const ANALYSIS_TOOL = {
           },
         },
       },
-      coaching: { type: "string" as const, description: "Detailed coaching recommendation paragraph (3-5 sentences). What to start doing, stop doing, and specific NEPQ techniques/phrases to practice." },
+      coachingFlags: {
+        type: "array" as const,
+        description: "List of automatic coaching flags triggered (empty if none). E.g. 'Stage 1: Ownership reframe missing', 'Stage 5: Pricing disclosed on setter call'",
+        items: { type: "string" as const },
+      },
+      coaching: { type: "string" as const, description: "Detailed coaching recommendation (3-5 sentences). Reference specific stages, what to start/stop doing, and specific NEPQ techniques to practice." },
     },
   },
 };

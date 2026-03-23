@@ -7,6 +7,8 @@ interface Call {
   id: string;
   date: string;
   fileName: string;
+  prospectName: string;
+  callDate: string;
   analysis: AnalysisResult | null;
   outcome: string;
 }
@@ -53,6 +55,7 @@ interface AnalysisResult {
   categories: AnalysisCategory[];
   excerpts: Excerpt[];
   strengths: Strength[];
+  coachingFlags?: string[];
   coaching: string;
 }
 
@@ -253,6 +256,19 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         </div>
       )}
 
+      {/* Coaching Flags */}
+      {analysis.coachingFlags && analysis.coachingFlags.length > 0 && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: 20, marginBottom: 24 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: COLORS.red, marginTop: 0, marginBottom: 10 }}>Automatic Coaching Flags</h3>
+          {analysis.coachingFlags.map((flag, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 14, color: "#991b1b" }}>
+              <span style={{ fontSize: 16 }}>&#9888;</span>
+              <span>{flag}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Coaching */}
       {analysis.coaching && (
         <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 10, padding: 20 }}>
@@ -333,13 +349,15 @@ export default function Page() {
   const [pasteText, setPasteText] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [prospectName, setProspectName] = useState("");
+  const [callDate, setCallDate] = useState("");
 
-  async function saveCallToDb(agentId: string, fileName: string, analysis: AnalysisResult): Promise<Call | null> {
+  async function saveCallToDb(agentId: string, fileName: string, analysis: AnalysisResult, pName?: string, cDate?: string): Promise<Call | null> {
     try {
       const res = await fetch("/api/calls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, fileName, analysis }),
+        body: JSON.stringify({ agentId, fileName, analysis, prospectName: pName || "", callDate: cDate || "" }),
       });
       const json = await res.json();
       if (res.ok) return json.call;
@@ -357,16 +375,33 @@ export default function Page() {
     }));
   }
 
+  function validateCallInfo(): boolean {
+    if (!prospectName.trim()) {
+      alert("Please enter the prospect name before uploading.");
+      return false;
+    }
+    if (!callDate) {
+      alert("Please select the date of call before uploading.");
+      return false;
+    }
+    return true;
+  }
+
   async function processFiles(files: File[], agentId: string) {
+    if (!validateCallInfo()) return;
+    const pName = prospectName.trim();
+    const cDate = callDate;
     setAnalyzingCalls((p) => ({ ...p, [agentId]: true }));
     try {
       for (const file of files) {
         const text = await file.text();
         if (!text?.trim()) continue;
         const analysis = await analyzeTranscript(text);
-        const call = await saveCallToDb(agentId, file.name, analysis);
+        const call = await saveCallToDb(agentId, file.name, analysis, pName, cDate);
         if (call) addCallToState(agentId, call);
       }
+      setProspectName("");
+      setCallDate("");
     } catch (err) {
       alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -393,16 +428,21 @@ export default function Page() {
 
   async function handlePasteSubmit() {
     if (!selectedAgent || !pasteText.trim()) return;
+    if (!validateCallInfo()) return;
     const agentId = selectedAgent.id;
     const text = pasteText.trim();
+    const pName = prospectName.trim();
+    const cDate = callDate;
     setPasteText("");
     setShowPaste(false);
     setAnalyzingCalls((p) => ({ ...p, [agentId]: true }));
     try {
       const analysis = await analyzeTranscript(text);
       const fileName = `Pasted ${new Date().toLocaleString()}`;
-      const call = await saveCallToDb(agentId, fileName, analysis);
+      const call = await saveCallToDb(agentId, fileName, analysis, pName, cDate);
       if (call) addCallToState(agentId, call);
+      setProspectName("");
+      setCallDate("");
     } catch (err) {
       alert("Analysis failed: " + (err instanceof Error ? err.message : "Unknown error"));
     } finally {
@@ -717,6 +757,29 @@ export default function Page() {
 
             {/* Upload Area */}
             <div style={{ marginBottom: 24 }}>
+              {/* Prospect Info Fields */}
+              <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: COLORS.textPrimary, marginBottom: 4 }}>Prospect Name *</label>
+                  <input
+                    type="text"
+                    value={prospectName}
+                    onChange={(e) => setProspectName(e.target.value)}
+                    placeholder="Enter prospect name"
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+                <div style={{ flex: "1 1 200px" }}>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: COLORS.textPrimary, marginBottom: 4 }}>Date of Call *</label>
+                  <input
+                    type="date"
+                    value={callDate}
+                    onChange={(e) => setCallDate(e.target.value)}
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
+
               <div
                 onDrop={handleDrop}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -818,8 +881,12 @@ export default function Page() {
                   {/* Header */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                     <div>
+                      {call.prospectName && <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.textPrimary }}>{call.prospectName}</div>}
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{call.fileName}</div>
-                      <div style={{ fontSize: 12, color: COLORS.textSecondary }}>{new Date(call.date).toLocaleDateString()} {new Date(call.date).toLocaleTimeString()}</div>
+                      <div style={{ fontSize: 12, color: COLORS.textSecondary }}>
+                        {call.callDate ? `Call date: ${new Date(call.callDate + "T00:00:00").toLocaleDateString()}` : new Date(call.date).toLocaleDateString()}{" "}
+                        &middot; Uploaded {new Date(call.date).toLocaleDateString()} {new Date(call.date).toLocaleTimeString()}
+                      </div>
                     </div>
                     <button onClick={() => deleteCall(selectedAgent.id, call.id)} style={linkBtn}>Delete</button>
                   </div>
