@@ -1,133 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are a sales coach using NEPQ (Jeremy Miner). Return ONLY valid JSON. No markdown, no code fences.
+const SYSTEM_PROMPT = `You are an expert sales coach specializing in NEPQ (Neuro-Emotional Persuasion Questions) by Jeremy Miner.
 
-CRITICAL RULES:
-- Every text field MUST be under 10 words
-- Quotes MUST be under 10 words
-- Use 1 excerpt and 1 strength only
-- coaching field under 15 words`;
+Analyze the sales call transcript and evaluate the agent's performance across the NEPQ framework:
+- Connection & Rapport: Building trust and genuine connection
+- Situation Questions: Understanding the prospect's current state
+- Problem Awareness: Helping prospect discover their pain points
+- Solution Awareness: Guiding prospect to see the fix
+- Objection Handling: Addressing concerns using NEPQ techniques
+- Closing & Commitment: Trial closes and commitment questions
+- Tone & Listening: Tonality, active listening, empathy
 
-const JSON_PREFIX = `{"overallScore":`;
+Score each category 1-10. Provide exactly 3 specific transcript excerpts that need improvement with NEPQ-based rewrites. Provide exactly 2 things the agent did well. Give a detailed coaching recommendation paragraph.
 
-// Build the expected structure so we can fill defaults for missing fields
-const DEFAULTS = {
-  overallScore: 35,
-  maxScore: 70,
-  summary: "Analysis incomplete",
-  categories: [
-    { name: "Connection & Rapport", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Situation Questions", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Problem Awareness", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Solution Awareness", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Objection Handling", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Closing & Commitment", score: 5, maxScore: 10, assessment: "N/A" },
-    { name: "Tone & Listening", score: 5, maxScore: 10, assessment: "N/A" },
-  ],
-  excerpts: [],
-  strengths: [],
-  coaching: "Review NEPQ fundamentals",
-};
+Keep quote fields to the essential phrase only (under 20 words). Assessment fields under 12 words.`;
 
-function deepMerge(defaults: Record<string, unknown>, partial: Record<string, unknown>): Record<string, unknown> {
-  const result = { ...defaults };
-  for (const key of Object.keys(partial)) {
-    if (partial[key] !== undefined && partial[key] !== null) {
-      result[key] = partial[key];
-    }
-  }
-  // Ensure categories array has all 7 entries
-  if (Array.isArray(result.categories)) {
-    const cats = result.categories as Array<Record<string, unknown>>;
-    const defaultCats = (defaults.categories as Array<Record<string, unknown>>);
-    result.categories = defaultCats.map((dc, i) => cats[i] ? { ...dc, ...cats[i] } : dc);
-  }
-  return result;
-}
-
-function parseResponse(raw: string): Record<string, unknown> {
-  // Strip markdown fences
-  let text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // continue to repair
-  }
-
-  // Truncation repair: remove trailing incomplete string value
-  text = text.replace(/"[^"]*$/, '""');
-  // Remove trailing comma/colon
-  text = text.replace(/[,:]\s*$/, "");
-
-  // Count and close open brackets
-  const stack: string[] = [];
-  let inString = false;
-  let escape = false;
-  for (const ch of text) {
-    if (escape) { escape = false; continue; }
-    if (ch === "\\") { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === "{") stack.push("}");
-    else if (ch === "[") stack.push("]");
-    else if (ch === "}" || ch === "]") stack.pop();
-  }
-  text += stack.reverse().join("");
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Return defaults if all parsing fails
-    return {};
-  }
-}
-
-async function callClaude(apiKey: string, transcript: string): Promise<Record<string, unknown>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
-
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+// Use Claude tool_use to guarantee valid JSON output
+const ANALYSIS_TOOL = {
+  name: "submit_analysis",
+  description: "Submit the NEPQ sales call analysis",
+  input_schema: {
+    type: "object" as const,
+    required: ["overallScore", "maxScore", "summary", "categories", "excerpts", "strengths", "coaching"],
+    properties: {
+      overallScore: { type: "number" as const, description: "Total score across all categories" },
+      maxScore: { type: "number" as const, description: "Always 70" },
+      summary: { type: "string" as const, description: "1-2 sentence overall assessment" },
+      categories: {
+        type: "array" as const,
+        description: "Exactly 7 NEPQ category scores",
+        items: {
+          type: "object" as const,
+          required: ["name", "score", "maxScore", "assessment"],
+          properties: {
+            name: { type: "string" as const },
+            score: { type: "number" as const, description: "Score 1-10" },
+            maxScore: { type: "number" as const, description: "Always 10" },
+            assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
+          },
+        },
       },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Analyze this sales call transcript using NEPQ framework. Score each of the 7 categories 1-10. Return JSON with: overallScore, maxScore(70), summary, categories[7], excerpts[1], strengths[1], coaching.\n\n${transcript}`,
+      excerpts: {
+        type: "array" as const,
+        description: "Exactly 3 specific transcript moments that need improvement",
+        items: {
+          type: "object" as const,
+          required: ["type", "label", "quote", "rewrite", "nepqPrinciple", "explanation"],
+          properties: {
+            type: { type: "string" as const, enum: ["improvement"], description: "Always improvement" },
+            label: { type: "string" as const, description: "Short label for the issue (3-5 words)" },
+            quote: { type: "string" as const, description: "What the agent actually said (exact or near-exact words from transcript, under 20 words)" },
+            rewrite: { type: "string" as const, description: "How to rephrase it using NEPQ principles" },
+            nepqPrinciple: { type: "string" as const, description: "Which NEPQ principle applies (e.g. Problem Awareness, Consequence Question)" },
+            explanation: { type: "string" as const, description: "Why the rewrite is more effective (1-2 sentences)" },
           },
-          {
-            role: "assistant",
-            content: JSON_PREFIX,
+        },
+      },
+      strengths: {
+        type: "array" as const,
+        description: "Exactly 2 things the agent did well, with transcript evidence",
+        items: {
+          type: "object" as const,
+          required: ["quote", "explanation"],
+          properties: {
+            quote: { type: "string" as const, description: "What the agent said that was effective (under 20 words)" },
+            explanation: { type: "string" as const, description: "Why this was effective from an NEPQ perspective (1-2 sentences)" },
           },
-        ],
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error?.message || "API error");
-    }
-
-    const text = JSON_PREFIX + (data.content?.[0]?.text || "");
-    console.log(`Claude: stop=${data.stop_reason} len=${text.length}`);
-    return parseResponse(text);
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+        },
+      },
+      coaching: { type: "string" as const, description: "Detailed coaching recommendation paragraph (3-5 sentences). What to start doing, stop doing, and specific NEPQ techniques/phrases to practice." },
+    },
+  },
+};
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -141,24 +85,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
     }
 
-    const trimmed = transcript.slice(0, 3000);
+    const trimmed = transcript.slice(0, 4000);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
 
-    // Try up to 2 times
-    let lastError = "";
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const partial = await callClaude(apiKey, trimmed);
-        const analysis = deepMerge(DEFAULTS, partial);
-        return NextResponse.json({ analysis });
-      } catch (e) {
-        lastError = e instanceof Error ? e.message : "Unknown error";
-        console.log(`Attempt ${attempt + 1} failed: ${lastError}`);
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          tools: [ANALYSIS_TOOL],
+          tool_choice: { type: "tool", name: "submit_analysis" },
+          messages: [
+            {
+              role: "user",
+              content: `Analyze this sales call transcript using the NEPQ framework. Use the submit_analysis tool to return your analysis.\n\n${trimmed}`,
+            },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || `API error ${response.status}`);
       }
-    }
 
-    return NextResponse.json({ error: lastError }, { status: 500 });
+      // Extract tool_use result — guaranteed valid JSON by Claude API
+      const toolBlock = data.content?.find(
+        (block: { type: string }) => block.type === "tool_use"
+      );
+
+      if (!toolBlock?.input) {
+        throw new Error("No analysis returned from Claude");
+      }
+
+      return NextResponse.json({ analysis: toolBlock.input });
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to analyze transcript";
+    const message =
+      error instanceof Error && error.name === "AbortError"
+        ? "Request timed out"
+        : error instanceof Error
+          ? error.message
+          : "Failed to analyze transcript";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
