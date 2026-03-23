@@ -74,10 +74,12 @@ Total max: 66. Bookable Quality: 56-66. Needs Improvement: 46-55. Mandatory Coac
 ## OUTPUT REQUIREMENTS
 Use this checklist as your guide for robust analysis. You MUST output:
 - Score each of the 6 stages individually
-- For EACH stage, provide detailed feedback based on its performance:
-  - RED stages (below 40% of max): Provide a transcript example showing what went wrong, explain what was NOT done that should have been, and give a specific suggestion with example phrasing for how to handle it
-  - AMBER stages (40-69% of max): Explain what was attempted, what fell short, and give specific actions/phrasing to reach green
-  - GREEN stages (70%+ of max): Highlight what the agent did well with a transcript quote as evidence
+- For EACH stage, provide detailed feedback based on its score percentage (score / maxScore):
+  - Below 40%: Provide a transcript example showing what went wrong, explain what was NOT done that should have been, and give a specific suggestion with example phrasing
+  - 40-69%: Explain what was attempted, what fell short, and give specific actions/phrasing to improve
+  - 70%+: Highlight what the agent did well with a transcript quote as evidence
+
+IMPORTANT: Do NOT write "RED STAGE", "AMBER STAGE", "GREEN STAGE" or any color labels in the feedback text. Just describe what happened and what to improve. The UI handles color coding automatically based on the score.
 - Note any automatic coaching flags triggered
 - Give a detailed coaching recommendation
 
