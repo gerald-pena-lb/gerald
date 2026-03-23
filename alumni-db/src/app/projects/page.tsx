@@ -25,7 +25,7 @@ export default function ProjectsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
         <Link
           href="/events/new?type=project"
-          className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+          className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
         >
           New Project
         </Link>

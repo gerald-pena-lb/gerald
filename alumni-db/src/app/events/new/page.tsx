@@ -87,7 +87,7 @@ function NewEventForm() {
           <button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f] disabled:opacity-50"
+            className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a] disabled:opacity-50"
           >
             {saving ? "Saving..." : "Create"}
           </button>

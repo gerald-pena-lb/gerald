@@ -179,7 +179,7 @@ export default function FinancesPage() {
           <div className="mb-4">
             <button
               onClick={() => setShowExpForm(!showExpForm)}
-              className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]"
+              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]"
             >
               Add Expenditure
             </button>
@@ -237,7 +237,7 @@ export default function FinancesPage() {
                 />
               </div>
               <div className="col-span-2">
-                <button type="submit" className="px-4 py-2 bg-[#7b1113] text-white rounded-md text-sm hover:bg-[#5a0d0f]">Save</button>
+                <button type="submit" className="px-4 py-2 bg-[#1e3a5f] text-white rounded-md text-sm hover:bg-[#152c4a]">Save</button>
               </div>
             </form>
           )}
