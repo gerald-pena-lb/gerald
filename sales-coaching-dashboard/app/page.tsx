@@ -1146,7 +1146,17 @@ export default function Page() {
                         &middot; Uploaded {new Date(call.date).toLocaleDateString()} {new Date(call.date).toLocaleTimeString()}
                       </div>
                     </div>
-                    <button onClick={() => deleteCall(selectedAgent.id, call.id)} style={linkBtn}>Delete</button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      {call.analysis && (
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: overallScoreColor(call.analysis.overallScore) }}>
+                            {call.analysis.overallScore}
+                          </div>
+                          <div style={{ fontSize: 10, color: COLORS.textSecondary, fontWeight: 600 }}>/ {call.analysis.maxScore}</div>
+                        </div>
+                      )}
+                      <button onClick={() => deleteCall(selectedAgent.id, call.id)} style={linkBtn}>Delete</button>
+                    </div>
                   </div>
 
                   {/* Outcome Pills */}
