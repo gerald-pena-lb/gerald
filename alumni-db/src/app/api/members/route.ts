@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  const db = getDb();
   const url = new URL(req.url);
   const search = url.searchParams.get("search") || "";
   const industry = url.searchParams.get("industry") || "";
@@ -11,85 +10,56 @@ export async function GET(req: NextRequest) {
   const titleFilter = url.searchParams.get("title") || "";
   const status = url.searchParams.get("status") || "";
 
-  let query = "SELECT * FROM members WHERE 1=1";
-  const params: unknown[] = [];
+  let query = supabase.from("members").select("*");
 
-  if (search) {
-    query += " AND full_name LIKE ?";
-    params.push(`%${search}%`);
-  }
-  if (industry) {
-    query += " AND industry = ?";
-    params.push(industry);
-  }
-  if (batch) {
-    query += " AND (batch_name LIKE ? OR batch_letter LIKE ?)";
-    params.push(`%${batch}%`, `%${batch}%`);
-  }
-  if (year) {
-    query += " AND year = ?";
-    params.push(Number(year));
-  }
-  if (titleFilter) {
-    query += " AND title LIKE ?";
-    params.push(`%${titleFilter}%`);
-  }
-  if (status) {
-    query += " AND status = ?";
-    params.push(status);
-  }
+  if (search) query = query.ilike("full_name", `%${search}%`);
+  if (industry) query = query.eq("industry", industry);
+  if (batch) query = query.or(`batch_name.ilike.%${batch}%,batch_letter.ilike.%${batch}%`);
+  if (year) query = query.eq("year", Number(year));
+  if (titleFilter) query = query.ilike("title", `%${titleFilter}%`);
+  if (status) query = query.eq("status", status);
 
-  query += " ORDER BY full_name ASC";
-  const members = db.prepare(query).all(...params);
-  db.close();
-  return NextResponse.json(members);
+  const { data, error } = await query.order("full_name");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function POST(req: NextRequest) {
-  const db = getDb();
   const body = await req.json();
 
-  // Support batch insert
   if (Array.isArray(body)) {
-    const stmt = db.prepare(`
-      INSERT INTO members (full_name, batch_name, batch_letter, year, phone_number, current_company, title, industry, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const insertMany = db.transaction((members: typeof body) => {
-      for (const m of members) {
-        stmt.run(
-          m.full_name,
-          m.batch_name || null,
-          m.batch_letter || null,
-          m.year || null,
-          m.phone_number || null,
-          m.current_company || null,
-          m.title || null,
-          m.industry || null,
-          m.status || "alive"
-        );
-      }
-    });
-    insertMany(body);
-    db.close();
-    return NextResponse.json({ success: true, count: body.length }, { status: 201 });
+    const rows = body.map((m) => ({
+      full_name: m.full_name,
+      batch_name: m.batch_name || null,
+      batch_letter: m.batch_letter || null,
+      year: m.year || null,
+      phone_number: m.phone_number || null,
+      current_company: m.current_company || null,
+      title: m.title || null,
+      industry: m.industry || null,
+      status: m.status || "alive",
+    }));
+    const { error } = await supabase.from("members").insert(rows);
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ success: true, count: rows.length }, { status: 201 });
   }
 
-  const result = db.prepare(`
-    INSERT INTO members (full_name, batch_name, batch_letter, year, phone_number, current_company, title, industry, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    body.full_name,
-    body.batch_name || null,
-    body.batch_letter || null,
-    body.year || null,
-    body.phone_number || null,
-    body.current_company || null,
-    body.title || null,
-    body.industry || null,
-    body.status || "alive"
-  );
+  const { data, error } = await supabase
+    .from("members")
+    .insert({
+      full_name: body.full_name,
+      batch_name: body.batch_name || null,
+      batch_letter: body.batch_letter || null,
+      year: body.year || null,
+      phone_number: body.phone_number || null,
+      current_company: body.current_company || null,
+      title: body.title || null,
+      industry: body.industry || null,
+      status: body.status || "alive",
+    })
+    .select("id")
+    .single();
 
-  db.close();
-  return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ id: data.id }, { status: 201 });
 }

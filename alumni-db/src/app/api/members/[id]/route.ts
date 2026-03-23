@@ -1,22 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  const member = db.prepare("SELECT * FROM members WHERE id = ?").get(Number(id));
-  if (!member) {
-    db.close();
+  const numId = Number(id);
+
+  const { data: member, error } = await supabase
+    .from("members")
+    .select("*")
+    .eq("id", numId)
+    .single();
+
+  if (error || !member) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const dues = db.prepare("SELECT * FROM annual_dues WHERE member_id = ? ORDER BY year DESC").all(Number(id));
-  const donations = db.prepare("SELECT * FROM donations WHERE member_id = ? ORDER BY date_given DESC").all(Number(id));
-  db.close();
-  return NextResponse.json({ ...member as object, dues, donations });
+  const [duesRes, donationsRes] = await Promise.all([
+    supabase.from("annual_dues").select("*").eq("member_id", numId).order("year", { ascending: false }),
+    supabase.from("donations").select("*").eq("member_id", numId).order("date_given", { ascending: false }),
+  ]);
+
+  return NextResponse.json({
+    ...member,
+    dues: duesRes.data || [],
+    donations: donationsRes.data || [],
+  });
 }
 
 export async function PUT(
@@ -24,29 +35,25 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
   const body = await req.json();
 
-  db.prepare(`
-    UPDATE members SET
-      full_name = ?, batch_name = ?, batch_letter = ?, year = ?,
-      phone_number = ?, current_company = ?, title = ?, industry = ?,
-      status = ?, updated_at = datetime('now')
-    WHERE id = ?
-  `).run(
-    body.full_name,
-    body.batch_name || null,
-    body.batch_letter || null,
-    body.year || null,
-    body.phone_number || null,
-    body.current_company || null,
-    body.title || null,
-    body.industry || null,
-    body.status || "alive",
-    Number(id)
-  );
+  const { error } = await supabase
+    .from("members")
+    .update({
+      full_name: body.full_name,
+      batch_name: body.batch_name || null,
+      batch_letter: body.batch_letter || null,
+      year: body.year || null,
+      phone_number: body.phone_number || null,
+      current_company: body.current_company || null,
+      title: body.title || null,
+      industry: body.industry || null,
+      status: body.status || "alive",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", Number(id));
 
-  db.close();
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }
 
@@ -55,8 +62,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = getDb();
-  db.prepare("DELETE FROM members WHERE id = ?").run(Number(id));
-  db.close();
+  const { error } = await supabase.from("members").delete().eq("id", Number(id));
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }

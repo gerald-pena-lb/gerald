@@ -1,58 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  const db = getDb();
   const url = new URL(req.url);
   const memberId = url.searchParams.get("member_id");
   const year = url.searchParams.get("year");
 
-  let query = `
-    SELECT d.*, m.full_name
-    FROM annual_dues d
-    JOIN members m ON d.member_id = m.id
-    WHERE 1=1
-  `;
-  const params: unknown[] = [];
+  let query = supabase
+    .from("annual_dues")
+    .select("*, members!inner(full_name)");
 
-  if (memberId) {
-    query += " AND d.member_id = ?";
-    params.push(Number(memberId));
-  }
-  if (year) {
-    query += " AND d.year = ?";
-    params.push(Number(year));
-  }
-  query += " ORDER BY d.year DESC, m.full_name ASC";
+  if (memberId) query = query.eq("member_id", Number(memberId));
+  if (year) query = query.eq("year", Number(year));
 
-  const dues = db.prepare(query).all(...params);
-  db.close();
-  return NextResponse.json(dues);
+  const { data, error } = await query.order("year", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const result = (data || []).map((d) => ({
+    ...d,
+    full_name: (d.members as { full_name: string }).full_name,
+    members: undefined,
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {
-  const db = getDb();
   const body = await req.json();
 
-  try {
-    const result = db.prepare(`
-      INSERT INTO annual_dues (member_id, year, amount, date_paid, remarks)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
-      body.member_id,
-      body.year,
-      body.amount,
-      body.date_paid,
-      body.remarks || null
-    );
-    db.close();
-    return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
-  } catch (e: unknown) {
-    db.close();
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    if (msg.includes("UNIQUE")) {
+  const { data, error } = await supabase
+    .from("annual_dues")
+    .insert({
+      member_id: body.member_id,
+      year: body.year,
+      amount: body.amount,
+      date_paid: body.date_paid,
+      remarks: body.remarks || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
       return NextResponse.json({ error: "Dues already recorded for this member and year" }, { status: 409 });
     }
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
+  return NextResponse.json({ id: data.id }, { status: 201 });
 }
