@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   function monthlyBreakdown(items: { amount: number; date: string }[], dateField: string) {
     const map = new Map<string, number>();
     for (const item of items) {
-      const d = (item as Record<string, string>)[dateField];
+      const d = (item as unknown as Record<string, string>)[dateField];
       if (!d) continue;
       const month = d.substring(0, 7); // YYYY-MM
       map.set(month, (map.get(month) || 0) + Number(item.amount));
