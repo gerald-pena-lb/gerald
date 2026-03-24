@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     const rows = body.map((m) => ({
       last_name: m.last_name,
       first_name: m.first_name,
+      chapter: m.chapter || null,
       batch_name: m.batch_name || null,
       batch_letter: m.batch_letter || null,
       year: m.year || null,
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
     .insert({
       last_name: body.last_name,
       first_name: body.first_name,
+      chapter: body.chapter || null,
       batch_name: body.batch_name || null,
       batch_letter: body.batch_letter || null,
       year: body.year || null,
