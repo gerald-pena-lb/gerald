@@ -82,7 +82,7 @@ export default function ReportsPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Reports</h1>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
         <button
           onClick={() => setTab("financial")}
           className={`px-4 py-2 rounded-md text-sm font-medium ${tab === "financial" ? "bg-white shadow-sm text-gray-900" : "text-gray-600"}`}
@@ -150,7 +150,7 @@ export default function ReportsPage() {
 
           {report && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
                 <SummaryCard label="Total Dues" value={report.summary.total_dues} />
                 <SummaryCard label="Total Donations" value={report.summary.total_donations} />
                 <SummaryCard label="Total Income" value={report.summary.total_income} color="text-green-600" />
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                 <SummaryCard label="Net" value={report.summary.net} color={report.summary.net >= 0 ? "text-green-600" : "text-red-600"} />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <BreakdownTable title="Dues by Month" data={report.breakdown.dues} />
                 <BreakdownTable title="Donations by Month" data={report.breakdown.donations} />
                 <BreakdownTable title="Expenditures by Month" data={report.breakdown.expenditures} />
@@ -190,7 +190,7 @@ export default function ReportsPage() {
 
           {collectionRate && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 <div className="bg-white rounded-lg shadow p-5">
                   <div className="text-sm text-gray-500">Active Members</div>
                   <div className="text-2xl font-bold mt-1">{collectionRate.total_active_members}</div>
@@ -210,7 +210,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Monthly Breakdown Table */}
-              <div className="bg-white rounded-lg shadow p-5">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-5 overflow-x-auto">
                 <h3 className="font-semibold text-gray-900 mb-3">Monthly Collection Breakdown</h3>
                 {collectionRate.monthly && collectionRate.monthly.length > 0 ? (
                   <table className="min-w-full divide-y divide-gray-200">
