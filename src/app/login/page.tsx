@@ -28,13 +28,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1e3a5f]">UP Alpha Sigma</h1>
-          <p className="text-gray-500 mt-1">Fraternity Alumni Association</p>
+        <div className="flex justify-center mb-8">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Alpha_Sigma_Logo.jpg"
+            alt="Alpha Sigma Logo"
+            className="w-40 h-40 object-contain"
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-5">
-          <h2 className="text-xl font-semibold text-gray-900 text-center">Sign In</h2>
 
           {error && (
             <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">{error}</div>
