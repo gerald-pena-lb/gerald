@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { generateFinancialPDF } from "@/lib/pdf";
 
 interface DuesEntry {
   id: number;
@@ -117,6 +118,14 @@ export default function FinancesPage() {
     fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures).catch(() => {});
   }
 
+  async function handleDownloadPDF() {
+    const y = duesYear;
+    const res = await fetch(`/api/reports?type=financial&start=${y}-01-01&end=${y}-12-31`);
+    if (!res.ok) return;
+    const report = await res.json();
+    generateFinancialPDF(report);
+  }
+
   const tabs = [
     { key: "dues" as const, label: "Annual Dues" },
     { key: "donations" as const, label: "Donations" },
@@ -125,7 +134,15 @@ export default function FinancesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Finances</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Finances</h1>
+        <button
+          onClick={handleDownloadPDF}
+          className="px-4 py-2 bg-[#c9a227] text-white rounded-md text-sm hover:bg-[#b08d20]"
+        >
+          Download Report (PDF)
+        </button>
+      </div>
 
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
         {tabs.map((t) => (
@@ -243,7 +260,7 @@ export default function FinancesPage() {
                   <tr key={d.id}>
                     <td className="px-4 py-3 text-sm font-medium">{d.full_name}</td>
                     <td className="px-4 py-3 text-sm">{d.year}</td>
-                    <td className="px-4 py-3 text-sm">₱{d.amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm">&#8369;{d.amount.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">{d.date_paid}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{d.remarks}</td>
                   </tr>
@@ -273,7 +290,7 @@ export default function FinancesPage() {
               {donations.map((d) => (
                 <tr key={d.id}>
                   <td className="px-4 py-3 text-sm font-medium">{d.full_name}</td>
-                  <td className="px-4 py-3 text-sm">₱{d.amount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">&#8369;{d.amount.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm">{d.date_given}</td>
                   <td className="px-4 py-3 text-sm">{d.transaction_reference}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">{d.remarks}</td>
@@ -371,8 +388,8 @@ export default function FinancesPage() {
                   <tr key={exp.id}>
                     <td className="px-4 py-3 text-sm">{exp.date}</td>
                     <td className="px-4 py-3 text-sm">{exp.description}</td>
-                    <td className="px-4 py-3 text-sm">₱{exp.amount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm">{exp.event_name || "—"}</td>
+                    <td className="px-4 py-3 text-sm">&#8369;{exp.amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm">{exp.event_name || "\u2014"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{exp.remarks}</td>
                   </tr>
                 ))}
