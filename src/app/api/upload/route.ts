@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = (parsed.data as Record<string, string>[])
-    .filter((row) => row.full_name)
+    .filter((row) => row.last_name && row.first_name)
     .map((row) => ({
-      full_name: row.full_name,
+      last_name: row.last_name,
+      first_name: row.first_name,
       batch_name: row.batch_name || null,
       batch_letter: row.batch_letter || null,
       year: row.year ? Number(row.year) : null,
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const skipped = (parsed.data as Record<string, string>[]).length - rows.length;
   const errors: string[] = [];
-  if (skipped > 0) errors.push(`${skipped} rows skipped: missing full_name`);
+  if (skipped > 0) errors.push(`${skipped} rows skipped: missing last_name or first_name`);
 
   const { error } = await supabase.from("members").insert(rows);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

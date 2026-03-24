@@ -40,7 +40,8 @@ interface EventOption {
 
 interface MemberOption {
   id: number;
-  full_name: string;
+  last_name: string;
+  first_name: string;
 }
 
 export default function FinancesPage() {
@@ -193,7 +194,7 @@ export default function FinancesPage() {
                 >
                   <option value="">Select Member</option>
                   {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.full_name}</option>
+                    <option key={m.id} value={m.id}>{m.last_name}, {m.first_name}</option>
                   ))}
                 </select>
               </div>

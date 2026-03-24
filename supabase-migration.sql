@@ -1,5 +1,14 @@
--- Migration: Add authentication, project management tables
+-- Migration: Add authentication, project management tables, split name fields
 -- Run this in the Supabase SQL Editor on existing databases
+
+-- Split full_name into last_name and first_name
+ALTER TABLE members ADD COLUMN IF NOT EXISTS last_name TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS first_name TEXT;
+-- Migrate existing data: assume "first last" format
+UPDATE members SET last_name = split_part(full_name, ' ', -1), first_name = regexp_replace(full_name, '\s+\S+$', '') WHERE last_name IS NULL AND full_name IS NOT NULL;
+ALTER TABLE members ALTER COLUMN last_name SET NOT NULL;
+ALTER TABLE members ALTER COLUMN first_name SET NOT NULL;
+ALTER TABLE members DROP COLUMN IF EXISTS full_name;
 
 -- Add new columns to events table for enhanced projects
 ALTER TABLE events ADD COLUMN IF NOT EXISTS goals TEXT;

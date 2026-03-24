@@ -41,7 +41,8 @@ interface ProjectDetail {
 
 interface MemberOption {
   id: number;
-  full_name: string;
+  last_name: string;
+  first_name: string;
 }
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -412,7 +413,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           >
                             <option value="">Unassigned</option>
                             {members.map((m) => (
-                              <option key={m.id} value={m.full_name}>{m.full_name}</option>
+                              <option key={m.id} value={`${m.last_name}, ${m.first_name}`}>{m.last_name}, {m.first_name}</option>
                             ))}
                           </select>
                         </div>

@@ -6,7 +6,8 @@ import { INDUSTRIES } from "@/lib/industries";
 
 interface Member {
   id: number;
-  full_name: string;
+  last_name: string;
+  first_name: string;
   batch_name: string;
   batch_letter: string;
   year: number;
@@ -47,7 +48,8 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
     const data = await res.json();
     setMember(data);
     setForm({
-      full_name: data.full_name || "",
+      last_name: data.last_name || "",
+      first_name: data.first_name || "",
       batch_name: data.batch_name || "",
       batch_letter: data.batch_letter || "",
       year: data.year?.toString() || "",
@@ -127,7 +129,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{member.full_name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{member.last_name}, {member.first_name}</h1>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               member.status === "alive" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
@@ -158,7 +160,8 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {[
-                ["full_name", "Full Name"],
+                ["last_name", "Last Name"],
+                ["first_name", "First Name"],
                 ["batch_name", "Batch Name"],
                 ["batch_letter", "Batch Letter"],
                 ["year", "Year"],
@@ -210,6 +213,8 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
+            <Info label="Last Name" value={member.last_name} />
+            <Info label="First Name" value={member.first_name} />
             <Info label="Batch" value={`${member.batch_name || ""} ${member.batch_letter ? `(${member.batch_letter})` : ""}`} />
             <Info label="Year" value={member.year?.toString()} />
             <Info label="Phone" value={member.phone_number} />
@@ -296,7 +301,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
             {member.dues.map((d) => (
               <tr key={d.id}>
                 <td className="px-3 py-2 text-sm">{d.year}</td>
-                <td className="px-3 py-2 text-sm">₱{d.amount.toLocaleString()}</td>
+                <td className="px-3 py-2 text-sm">&#8369;{d.amount.toLocaleString()}</td>
                 <td className="px-3 py-2 text-sm">{d.date_paid}</td>
                 <td className="px-3 py-2 text-sm text-gray-500">{d.remarks}</td>
               </tr>
@@ -386,7 +391,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
             {member.donations.map((d) => (
               <tr key={d.id}>
                 <td className="px-3 py-2 text-sm">{d.date_given}</td>
-                <td className="px-3 py-2 text-sm">₱{d.amount.toLocaleString()}</td>
+                <td className="px-3 py-2 text-sm">&#8369;{d.amount.toLocaleString()}</td>
                 <td className="px-3 py-2 text-sm">{d.transaction_reference}</td>
                 <td className="px-3 py-2 text-sm text-gray-500">{d.remarks}</td>
               </tr>
@@ -409,7 +414,7 @@ function Info({ label, value }: { label: string; value?: string }) {
   return (
     <div>
       <div className="text-xs font-medium text-gray-500">{label}</div>
-      <div className="text-sm text-gray-900">{value || "—"}</div>
+      <div className="text-sm text-gray-900">{value || "\u2014"}</div>
     </div>
   );
 }

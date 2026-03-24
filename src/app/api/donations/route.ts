@@ -7,18 +7,21 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("donations")
-    .select("*, members!inner(full_name)");
+    .select("*, members!inner(last_name, first_name)");
 
   if (memberId) query = query.eq("member_id", Number(memberId));
 
   const { data, error } = await query.order("date_given", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const result = (data || []).map((d) => ({
-    ...d,
-    full_name: (d.members as { full_name: string }).full_name,
-    members: undefined,
-  }));
+  const result = (data || []).map((d) => {
+    const m = d.members as { last_name: string; first_name: string };
+    return {
+      ...d,
+      full_name: `${m.last_name}, ${m.first_name}`,
+      members: undefined,
+    };
+  });
 
   return NextResponse.json(result);
 }
