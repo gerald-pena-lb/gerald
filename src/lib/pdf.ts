@@ -305,3 +305,106 @@ export function generateFinancialPDF(report: FinancialReportData) {
 
   doc.save(`Financial_Report_${report.filters.start}_to_${report.filters.end}.pdf`);
 }
+
+interface CollectionRateData {
+  year: number;
+  total_active_members: number;
+  paid_members: number;
+  collection_rate: string;
+  total_collected: number;
+  monthly: { month: string; count: number; amount: number }[];
+}
+
+export function generateCollectionRatePDF(data: CollectionRateData) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  // Header
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text("UP Alpha Sigma Fraternity Alumni Association", pageWidth / 2, y, { align: "center" });
+  y += 8;
+
+  doc.setFontSize(18);
+  doc.setTextColor(30, 58, 95);
+  doc.text("Collection Rate Report", pageWidth / 2, y, { align: "center" });
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setTextColor(80);
+  doc.text(`Year: ${data.year}`, pageWidth / 2, y, { align: "center" });
+  y += 12;
+
+  // Summary
+  doc.setFontSize(12);
+  doc.setTextColor(30, 58, 95);
+  doc.text("Summary", 14, y);
+  y += 2;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Metric", "Value"]],
+    body: [
+      ["Active Members", String(data.total_active_members)],
+      ["Paid Members", String(data.paid_members)],
+      ["Collection Rate", `${data.collection_rate}%`],
+      ["Total Collected", `₱${data.total_collected.toLocaleString()}`],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [30, 58, 95], fontSize: 9 },
+    bodyStyles: { fontSize: 9 },
+    margin: { left: 14, right: pageWidth / 2 + 5 },
+  });
+  y = getLastTableY(doc, y + 40);
+  y += 10;
+
+  // Monthly breakdown
+  if (data.monthly && data.monthly.length > 0) {
+    doc.setFontSize(12);
+    doc.setTextColor(30, 58, 95);
+    doc.text("Monthly Breakdown", 14, y);
+    y += 2;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Month", "Members Paid", "Amount Collected", "Collection Rate"]],
+      body: [
+        ...data.monthly.map((m) => [
+          m.month,
+          String(m.count),
+          `₱${m.amount.toLocaleString()}`,
+          data.total_active_members > 0
+            ? `${((m.count / data.total_active_members) * 100).toFixed(1)}%`
+            : "0.0%",
+        ]),
+        [
+          "Total",
+          String(data.paid_members),
+          `₱${data.total_collected.toLocaleString()}`,
+          `${data.collection_rate}%`,
+        ],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [30, 58, 95], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(
+      `Generated on ${new Date().toLocaleDateString()} | Page ${i} of ${pageCount}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: "center" }
+    );
+  }
+
+  doc.save(`Collection_Rate_Report_${data.year}.pdf`);
+}
