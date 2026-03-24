@@ -92,6 +92,20 @@ CREATE TABLE app_users (
 INSERT INTO app_users (username, password, display_name, role)
 VALUES ('Gerald', 'ubag1964', 'Gerald', 'admin');
 
+-- Meeting summaries (AI-parsed minutes of the meeting)
+CREATE TABLE meeting_summaries (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  raw_text TEXT NOT NULL,
+  meeting_date TEXT,
+  location TEXT,
+  participants JSONB DEFAULT '[]',
+  updates JSONB DEFAULT '[]',
+  action_items JSONB DEFAULT '[]',
+  previous_action_items JSONB DEFAULT '[]',
+  title TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Project sections (like Asana sections)
 CREATE TABLE project_sections (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
