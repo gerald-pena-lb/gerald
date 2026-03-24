@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       current_company: row.current_company || null,
       title: row.title || null,
       industry: row.industry || null,
-      status: row.status || "alive",
+      status: ["alive", "deceased"].includes(row.status?.toLowerCase()) ? row.status.toLowerCase() : "alive",
     }));
 
   const skipped = (parsed.data as Record<string, string>[]).length - rows.length;
