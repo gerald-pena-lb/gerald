@@ -73,8 +73,9 @@ CRITICAL RULES:
 - Stage 1 has 5 criteria → max 10. Stage 2 has 5 criteria → max 10.
 - Stage 3 has 7 criteria → max 14. Stage 4 has 7 criteria → max 14.
 - Stage 5 has 4 criteria → max 8. Stage 6 has 16 criteria → max 32.
-- If a criteria is NOT applicable (e.g. no objection occurred so "handled objection" can't be scored), score it 1 (benefit of the doubt), NOT 0.
-- If the transcript is short or missing a stage entirely, score all criteria for that stage as 0.
+- "Not applicable" ONLY applies to objection-handling criteria where the specific objection never came up (e.g. prospect never said "I can't afford it" so "handled affordability objection" is N/A). In this rare case, score it 1 (benefit of the doubt).
+- IMPORTANT: If the agent simply did NOT do something they should have done, that is NOT "not applicable" — that is a 0. For example, if the agent never attempted to book a call, never introduced the book, never asked for materials — all of those are 0, not "N/A."
+- If the transcript is short, ends abruptly, or a stage is missing entirely, score all criteria for that stage as 0. The agent is responsible for reaching every stage.
 - The overall score MUST equal the sum of all 6 stage scores. Double-check your arithmetic.
 
 Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥24.
