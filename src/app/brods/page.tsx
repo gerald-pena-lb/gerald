@@ -25,10 +25,22 @@ export default function BrodsPage() {
   const [industry, setIndustry] = useState("");
   const [batch, setBatch] = useState("");
   const [year, setYear] = useState("");
+  const [chapter, setChapter] = useState("");
   const [titleFilter, setTitleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  // Load distinct years for the dropdown
+  useEffect(() => {
+    fetch("/api/members")
+      .then((r) => r.json())
+      .then((data: Member[]) => {
+        const years = [...new Set(data.map((m) => m.year).filter(Boolean))].sort((a, b) => b - a);
+        setAvailableYears(years);
+      });
+  }, []);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -36,11 +48,12 @@ export default function BrodsPage() {
     if (industry) params.set("industry", industry);
     if (batch) params.set("batch", batch);
     if (year) params.set("year", year);
+    if (chapter) params.set("chapter", chapter);
     if (titleFilter) params.set("title", titleFilter);
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/members?${params}`);
     setMembers(await res.json());
-  }, [search, industry, batch, year, titleFilter, statusFilter]);
+  }, [search, industry, batch, year, chapter, titleFilter, statusFilter]);
 
   useEffect(() => {
     const t = setTimeout(load, 300);
@@ -98,7 +111,7 @@ export default function BrodsPage() {
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <input
             type="text"
             placeholder="Search name..."
@@ -106,6 +119,28 @@ export default function BrodsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
           />
+          <select
+            value={chapter}
+            onChange={(e) => setChapter(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+          >
+            <option value="">All Chapters</option>
+            <option value="Manila">Manila</option>
+            <option value="Los Banos">Los Banos</option>
+            <option value="Diliman">Diliman</option>
+          </select>
+          <select
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+          >
+            <option value="">All Years</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
@@ -123,13 +158,6 @@ export default function BrodsPage() {
             placeholder="Batch name/letter..."
             value={batch}
             onChange={(e) => setBatch(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Year..."
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm"
           />
           <input

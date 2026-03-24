@@ -9,11 +9,13 @@ export async function GET(req: NextRequest) {
   const year = url.searchParams.get("year") || "";
   const titleFilter = url.searchParams.get("title") || "";
   const status = url.searchParams.get("status") || "";
+  const chapter = url.searchParams.get("chapter") || "";
 
   let query = supabase.from("members").select("*");
 
   if (search) query = query.or(`last_name.ilike.%${search}%,first_name.ilike.%${search}%`);
   if (industry) query = query.eq("industry", industry);
+  if (chapter) query = query.eq("chapter", chapter);
   if (batch) query = query.or(`batch_name.ilike.%${batch}%,batch_letter.ilike.%${batch}%`);
   if (year) query = query.eq("year", Number(year));
   if (titleFilter) query = query.ilike("title", `%${titleFilter}%`);
