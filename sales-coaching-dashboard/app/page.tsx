@@ -1,6 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, Component, ErrorInfo, ReactNode } from "react";
+
+/* ─── Error Boundary ─── */
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Dashboard error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: "center" }}>
+          <h2>Something went wrong</h2>
+          <p style={{ color: "#666", margin: "12px 0" }}>{this.state.error}</p>
+          <button onClick={() => this.setState({ hasError: false, error: "" })} style={{ padding: "8px 20px", borderRadius: 8, background: "#4f46e5", color: "#fff", border: "none", cursor: "pointer" }}>
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /* ─── Types ─── */
 interface Call {
@@ -81,6 +109,27 @@ const OUTCOMES = [
 
 function pct(score: number, max: number): number {
   return max > 0 ? Math.round((score / max) * 100) : 0;
+}
+
+/* Ensure analysis data has valid numbers to prevent render crashes */
+function safeAnalysis(a: AnalysisResult | null): AnalysisResult | null {
+  if (!a) return null;
+  return {
+    ...a,
+    overallScore: Number(a.overallScore) || 0,
+    maxScore: Number(a.maxScore) || 1,
+    summary: a.summary || "",
+    coaching: a.coaching || "",
+    categories: Array.isArray(a.categories)
+      ? a.categories.map((c) => ({
+          ...c,
+          score: Number(c.score) || 0,
+          maxScore: Number(c.maxScore) || 1,
+          name: c.name || "Unknown",
+          assessment: c.assessment || "",
+        }))
+      : [],
+  };
 }
 
 function getWeekRange(weekStr: string) {
@@ -545,6 +594,10 @@ function AssistantWidget({ data }: { data: AppData }) {
 
 /* ─── Main App ─── */
 export default function Page() {
+  return <ErrorBoundary><PageInner /></ErrorBoundary>;
+}
+
+function PageInner() {
   const [data, setData] = useState<AppData>({ agents: [] });
   const [loading, setLoading] = useState(true);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
@@ -559,7 +612,11 @@ export default function Page() {
       const res = await fetch("/api/agents");
       const json = await res.json();
       if (res.ok) {
-        setData({ agents: json.agents });
+        const agents = (json.agents || []).map((a: Agent) => ({
+          ...a,
+          calls: (a.calls || []).map((c: Call) => ({ ...c, analysis: safeAnalysis(c.analysis) })),
+        }));
+        setData({ agents });
       } else {
         console.error("API error:", json);
         alert("Failed to load agents: " + (json.error || "Unknown error"));
@@ -764,7 +821,7 @@ export default function Page() {
       });
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || "API error");
-      return resData.analysis;
+      return safeAnalysis(resData.analysis)!;
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
         throw new Error("Analysis timed out — the transcript may be too long. Try a shorter excerpt.");
