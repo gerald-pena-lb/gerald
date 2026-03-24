@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     .map((row) => ({
       last_name: row.last_name,
       first_name: row.first_name,
+      chapter: row.chapter || null,
       batch_name: row.batch_name || null,
       batch_letter: row.batch_letter || null,
       year: row.year ? Number(row.year) : null,
