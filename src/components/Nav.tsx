@@ -19,7 +19,7 @@ export default function Nav() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="font-bold text-xl tracking-tight">
-            UP Alpha Sigma Alumni
+            UP Alpha Sigma Fraternity Alumni Association
           </Link>
           <div className="flex space-x-1">
             {links.map((link) => (
