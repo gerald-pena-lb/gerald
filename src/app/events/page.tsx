@@ -16,7 +16,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
-    fetch("/api/events?type=event").then((r) => r.json()).then(setEvents);
+    fetch("/api/events?type=event").then((r) => r.json()).then(setEvents).catch(() => {});
   }, []);
 
   return (

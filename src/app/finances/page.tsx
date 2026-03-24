@@ -57,22 +57,22 @@ export default function FinancesPage() {
   const [duesError, setDuesError] = useState("");
 
   useEffect(() => {
-    fetch("/api/events").then((r) => r.json()).then(setEvents);
-    fetch("/api/members").then((r) => r.json()).then(setMembers);
+    fetch("/api/events").then((r) => r.json()).then(setEvents).catch(() => {});
+    fetch("/api/members").then((r) => r.json()).then(setMembers).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (tab === "dues") {
-      fetch(`/api/dues?year=${duesYear}`).then((r) => r.json()).then(setDues);
+      fetch(`/api/dues?year=${duesYear}`).then((r) => r.json()).then(setDues).catch(() => {});
     } else if (tab === "donations") {
-      fetch("/api/donations").then((r) => r.json()).then(setDonations);
+      fetch("/api/donations").then((r) => r.json()).then(setDonations).catch(() => {});
     } else {
-      fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures);
+      fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures).catch(() => {});
     }
   }, [tab, duesYear]);
 
   function reloadDues() {
-    fetch(`/api/dues?year=${duesYear}`).then((r) => r.json()).then(setDues);
+    fetch(`/api/dues?year=${duesYear}`).then((r) => r.json()).then(setDues).catch(() => {});
   }
 
   async function handleAddDues(e: React.FormEvent) {
@@ -114,7 +114,7 @@ export default function FinancesPage() {
     });
     setShowExpForm(false);
     setExpForm({ description: "", amount: "", date: "", event_id: "", remarks: "" });
-    fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures);
+    fetch("/api/expenditures").then((r) => r.json()).then(setExpenditures).catch(() => {});
   }
 
   const tabs = [

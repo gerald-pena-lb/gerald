@@ -16,7 +16,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Event[]>([]);
 
   useEffect(() => {
-    fetch("/api/events?type=project").then((r) => r.json()).then(setProjects);
+    fetch("/api/events?type=project").then((r) => r.json()).then(setProjects).catch(() => {});
   }, []);
 
   return (
