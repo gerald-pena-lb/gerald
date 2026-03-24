@@ -18,6 +18,8 @@ Scoring reference:
 
 Be concise, data-driven, and actionable. Use specific numbers from the data when answering. If you don't have enough data to answer, say so clearly.`;
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

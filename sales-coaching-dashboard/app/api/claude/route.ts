@@ -164,6 +164,8 @@ const ANALYSIS_TOOL = {
   },
 };
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

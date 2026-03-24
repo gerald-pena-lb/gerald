@@ -753,14 +753,26 @@ export default function Page() {
   }
 
   async function analyzeTranscript(transcript: string): Promise<AnalysisResult> {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript }),
-    });
-    const resData = await res.json();
-    if (!res.ok) throw new Error(resData.error || "API error");
-    return resData.analysis;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript }),
+        signal: controller.signal,
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "API error");
+      return resData.analysis;
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("Analysis timed out — the transcript may be too long. Try a shorter excerpt.");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   /* ─── Computed Stats ─── */
