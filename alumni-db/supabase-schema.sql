@@ -3,7 +3,8 @@
 
 CREATE TABLE members (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  full_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  first_name TEXT NOT NULL,
   batch_name TEXT,
   batch_letter TEXT,
   year INTEGER,

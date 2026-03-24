@@ -12,14 +12,14 @@ export async function GET(req: NextRequest) {
 
   let query = supabase.from("members").select("*");
 
-  if (search) query = query.ilike("full_name", `%${search}%`);
+  if (search) query = query.or(`last_name.ilike.%${search}%,first_name.ilike.%${search}%`);
   if (industry) query = query.eq("industry", industry);
   if (batch) query = query.or(`batch_name.ilike.%${batch}%,batch_letter.ilike.%${batch}%`);
   if (year) query = query.eq("year", Number(year));
   if (titleFilter) query = query.ilike("title", `%${titleFilter}%`);
   if (status) query = query.eq("status", status);
 
-  const { data, error } = await query.order("full_name");
+  const { data, error } = await query.order("last_name").order("first_name");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
 
   if (Array.isArray(body)) {
     const rows = body.map((m) => ({
-      full_name: m.full_name,
+      last_name: m.last_name,
+      first_name: m.first_name,
       batch_name: m.batch_name || null,
       batch_letter: m.batch_letter || null,
       year: m.year || null,
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("members")
     .insert({
-      full_name: body.full_name,
+      last_name: body.last_name,
+      first_name: body.first_name,
       batch_name: body.batch_name || null,
       batch_letter: body.batch_letter || null,
       year: body.year || null,

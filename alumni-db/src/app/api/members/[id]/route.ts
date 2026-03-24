@@ -40,7 +40,8 @@ export async function PUT(
   const { error } = await supabase
     .from("members")
     .update({
-      full_name: body.full_name,
+      last_name: body.last_name,
+      first_name: body.first_name,
       batch_name: body.batch_name || null,
       batch_letter: body.batch_letter || null,
       year: body.year || null,
