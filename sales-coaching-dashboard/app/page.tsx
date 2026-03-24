@@ -115,12 +115,12 @@ const STAGE_THRESHOLDS: Record<number, { green: number; amber: number }> = {
   10: { green: 7, amber: 5 },   // Connect (7/10), Situation (7/10)
   14: { green: 10, amber: 7 },  // Problem (10/14), Consequence (10/14)
   8:  { green: 6, amber: 4 },   // Open Wallet Test (6/8)
-  32: { green: 24, amber: 18 }, // Book the Call / Closing & Commitment (24/32)
+  37: { green: 27, amber: 20 }, // Book the Call / Closing & Commitment (27/37)
 };
 
 /* Override for Book the Call which has a higher pass threshold */
 function getStageThresholds(maxScore: number, name: string): { green: number; amber: number } {
-  if (name.includes("Book") || name.includes("Stage 6") || name.includes("Closing")) return { green: 24, amber: 18 };
+  if (name.includes("Book") || name.includes("Stage 6") || name.includes("Closing")) return { green: 27, amber: 20 };
   return STAGE_THRESHOLDS[maxScore] || { green: Math.ceil(maxScore * 0.7), amber: Math.ceil(maxScore * 0.5) };
 }
 

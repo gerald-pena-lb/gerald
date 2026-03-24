@@ -42,44 +42,61 @@ Analyze the sales call transcript using the 6-stage NEPQ framework below. Use th
 - Handled "I can't afford it" with Mastermind bridge
 - Handled "need to talk to spouse" by offering to include them
 
-## STAGE 6 — BOOK THE CALL / CLOSING & COMMITMENT (Max 32 pts, Pass: 24)
-- Did the setter do the open wallet test?
-- Did the setter tie the call back to the prospect's stated goals?
-- Did the setter connect the booking to the consequences/pain points mentioned earlier?
-- Did the setter confidently move to book the call (without hesitation)?
-- Did the setter clearly explain what will happen on the next call?
-- Did the setter secure a confirmed date and time?
-- Did the setter get a clear verbal commitment to attend?
-- Did the setter introduce "Your Book or Your Excuse" (the book)?
-- Did the setter get commitment from prospect to read the book?
-- Did the setter explain the value of the book?
-- Did the setter get a clear yes to reading it before the call?
-- Did the setter properly position Alinka?
-- Did the setter build anticipation and credibility for the call?
-- Did the setter ask prospect to send pre-call materials?
-- Did the setter explain what kind of materials to send?
-- Did the setter get a clear commitment to send materials?
+## STAGE 6 — BOOK THE CALL / CLOSING & COMMITMENT (Max 37 pts, Pass: 27)
+
+Criteria are weighted by impact on future conversion using NEPQ principles.
+
+### CRITICAL (3 pts each) — Core NEPQ closing moves that directly drive conversion:
+- [3 pts] Tied the call back to prospect's stated goals (creates emotional anchor)
+- [3 pts] Connected the booking to consequences/pain points mentioned earlier (leverages Stage 4 emotional investment)
+- [3 pts] Secured a confirmed date and time (no vague "sometime next week")
+- [3 pts] Got a clear verbal commitment to attend (reduces no-shows)
+- [3 pts] Properly positioned Alinka — built her credibility and authority as the strategist they'll speak with
+
+### HIGH (2 pts each) — Strong conversion drivers that significantly impact show rate and close rate:
+- [2 pts] Did the open wallet test (confirms financial readiness before booking)
+- [2 pts] Confidently moved to book the call without hesitation (conviction transfers)
+- [2 pts] Clearly explained what will happen on the next call (sets expectations, reduces anxiety)
+- [2 pts] Introduced "Your Book or Your Excuse" (the book) as a key resource
+- [2 pts] Built anticipation and credibility for the strategy call
+- [2 pts] Handled "I need to think about it" or similar objections by referencing Stage 4 consequences
+- [2 pts] Framed strategy call as prospect's next step toward their goal — not a sales call
+- [2 pts] Got commitment from prospect to read the book before the call (micro-commitment that increases show rate)
+- [2 pts] Reconfirmed all commitments before ending the call (commitment/consistency principle)
+
+### SUPPORTING (1 pt each) — Reinforcement items that support logistics and preparation:
+- [1 pt] Explained the value of the book and why it matters before the call
+- [1 pt] Asked prospect to send pre-call materials
+- [1 pt] Explained what kind of materials to send
+- [1 pt] Got a clear commitment to send materials
 
 ## SCORING — FOLLOW THIS EXACTLY. DO NOT DEVIATE.
 
-Step 1: For EACH criteria bullet under each stage, score it individually:
+### Stages 1-5: Standard scoring (2 pts per criterion)
+For EACH criteria bullet, score it individually:
 - 2 = The agent clearly did this well. You can quote a specific line from the transcript as evidence.
 - 1 = The agent partially attempted this. You can point to a moment but it was incomplete or awkward.
 - 0 = There is NO evidence of this anywhere in the transcript, OR it was done incorrectly.
 
-Step 2: Add up the individual criteria scores for each stage. This sum IS the stage score. Do NOT round or adjust.
+### Stage 6: Weighted scoring (variable pts per criterion)
+For EACH criteria bullet, score based on its weight tier:
+- CRITICAL (3 pt items): 3 = clearly done well, 1 = partial attempt, 0 = not done
+- HIGH (2 pt items): 2 = clearly done well, 1 = partial attempt, 0 = not done
+- SUPPORTING (1 pt items): 1 = clearly done, 0 = not done
+
+Add up all individual scores per stage. The sum IS the stage score. Do NOT round or adjust.
 
 CRITICAL RULES:
 - Stage 1 has 5 criteria → max 10. Stage 2 has 5 criteria → max 10.
 - Stage 3 has 7 criteria → max 14. Stage 4 has 7 criteria → max 14.
-- Stage 5 has 4 criteria → max 8. Stage 6 has 16 criteria → max 32.
-- "Not applicable" ONLY applies to objection-handling criteria where the specific objection never came up (e.g. prospect never said "I can't afford it" so "handled affordability objection" is N/A). In this rare case, score it 1 (benefit of the doubt).
+- Stage 5 has 4 criteria → max 8. Stage 6 has 18 weighted criteria → max 37.
+- "Not applicable" ONLY applies to objection-handling criteria where the specific objection never came up (e.g. prospect never said "I can't afford it" so "handled affordability objection" is N/A). In this rare case, score it 1.
 - IMPORTANT: If the agent simply did NOT do something they should have done, that is NOT "not applicable" — that is a 0. For example, if the agent never attempted to book a call, never introduced the book, never asked for materials — all of those are 0, not "N/A."
 - If the transcript is short, ends abruptly, or a stage is missing entirely, score all criteria for that stage as 0. The agent is responsible for reaching every stage.
 - The overall score MUST equal the sum of all 6 stage scores. Double-check your arithmetic.
 
-Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥24.
-Total max: 88. Bookable Quality: ≥80. Needs Improvement: 70-79. Mandatory Coaching: below 70.
+Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥27.
+Total max: 93. All scores are displayed as percentages.
 
 ## AUTOMATIC COACHING FLAGS (regardless of score):
 - Stage 1: Ownership reframe missing
@@ -116,9 +133,9 @@ const ANALYSIS_TOOL = {
     type: "object" as const,
     required: ["overallScore", "maxScore", "summary", "categories", "coachingFlags", "coaching"],
     properties: {
-      overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 88)" },
-      maxScore: { type: "number" as const, description: "Always 88" },
-      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (80-88), Needs Improvement (70-79), or Mandatory Coaching (below 70)." },
+      overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 93)" },
+      maxScore: { type: "number" as const, description: "Always 93" },
+      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Use percentage: e.g. 'Score: 78% — Needs Improvement'. Bookable Quality: 90%+, Needs Improvement: 80-89%, Mandatory Coaching: below 80%." },
       categories: {
         type: "array" as const,
         description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call. Each stage includes detailed feedback.",
@@ -128,7 +145,7 @@ const ANALYSIS_TOOL = {
           properties: {
             name: { type: "string" as const, description: "Stage name, e.g. 'Stage 1 — Connect'" },
             score: { type: "number" as const, description: "Stage score" },
-            maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 32" },
+            maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 37" },
             assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
             transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For stages below pass threshold: what the agent said/didn't say. For passing stages: what the agent said that was effective." },
             transcriptContext: { type: "string" as const, description: "2-4 lines of surrounding transcript context with speaker labels" },
