@@ -39,17 +39,16 @@ interface ProjectDetail {
   completion_pct: number;
 }
 
-interface MemberOption {
+interface UserOption {
   id: number;
-  last_name: string;
-  first_name: string;
+  display_name: string;
 }
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [project, setProject] = useState<ProjectDetail | null>(null);
-  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [users, setUsers] = useState<UserOption[]>([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", goals: "", date: "", due_date: "", status: "" });
   const [newSection, setNewSection] = useState("");
@@ -76,7 +75,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     load();
-    fetch("/api/members").then((r) => r.json()).then(setMembers).catch(() => {});
+    fetch("/api/users").then((r) => r.json()).then(setUsers).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -412,8 +411,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm"
                           >
                             <option value="">Unassigned</option>
-                            {members.map((m) => (
-                              <option key={m.id} value={`${m.last_name}, ${m.first_name}`}>{m.last_name}, {m.first_name}</option>
+                            {users.map((u) => (
+                              <option key={u.id} value={u.display_name}>{u.display_name}</option>
                             ))}
                           </select>
                         </div>

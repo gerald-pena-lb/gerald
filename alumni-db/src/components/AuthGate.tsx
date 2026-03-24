@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import Nav from "./Nav";
+import UbagWidget from "./UbagWidget";
 import LoginPage from "@/app/login/page";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     <>
       <Nav />
       <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <UbagWidget />
     </>
   );
 }

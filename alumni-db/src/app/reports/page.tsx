@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { generateFinancialPDF } from "@/lib/pdf";
+import { generateFinancialPDF, generateCollectionRatePDF } from "@/lib/pdf";
 
 interface FinancialReport {
   summary: {
@@ -25,6 +25,7 @@ interface CollectionRate {
   paid_members: number;
   collection_rate: string;
   total_collected: number;
+  monthly: { month: string; count: number; amount: number }[];
 }
 
 export default function ReportsPage() {
@@ -177,27 +178,76 @@ export default function ReportsPage() {
               onChange={(e) => setYear(e.target.value)}
               className="border border-gray-300 rounded-md px-3 py-2 text-sm w-24"
             />
+            {collectionRate && (
+              <button
+                onClick={() => generateCollectionRatePDF(collectionRate)}
+                className="ml-auto px-4 py-1.5 bg-[#c9a227] text-white rounded-md text-sm hover:bg-[#b08d20]"
+              >
+                Download PDF
+              </button>
+            )}
           </div>
 
           {collectionRate && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
-                <div className="text-sm text-gray-500">Active Members</div>
-                <div className="text-2xl font-bold mt-1">{collectionRate.total_active_members}</div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow p-5">
+                  <div className="text-sm text-gray-500">Active Members</div>
+                  <div className="text-2xl font-bold mt-1">{collectionRate.total_active_members}</div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-5">
+                  <div className="text-sm text-gray-500">Paid Members</div>
+                  <div className="text-2xl font-bold mt-1">{collectionRate.paid_members}</div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-5">
+                  <div className="text-sm text-gray-500">Collection Rate</div>
+                  <div className="text-2xl font-bold mt-1 text-[#c9a227]">{collectionRate.collection_rate}%</div>
+                </div>
+                <div className="bg-white rounded-lg shadow p-5">
+                  <div className="text-sm text-gray-500">Total Collected</div>
+                  <div className="text-2xl font-bold mt-1">&#8369;{collectionRate.total_collected.toLocaleString()}</div>
+                </div>
               </div>
+
+              {/* Monthly Breakdown Table */}
               <div className="bg-white rounded-lg shadow p-5">
-                <div className="text-sm text-gray-500">Paid Members</div>
-                <div className="text-2xl font-bold mt-1">{collectionRate.paid_members}</div>
+                <h3 className="font-semibold text-gray-900 mb-3">Monthly Collection Breakdown</h3>
+                {collectionRate.monthly && collectionRate.monthly.length > 0 ? (
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Members Paid</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount Collected</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Collection Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {collectionRate.monthly.map((row) => (
+                        <tr key={row.month} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-sm text-gray-700">{row.month}</td>
+                          <td className="px-3 py-2 text-sm text-right">{row.count}</td>
+                          <td className="px-3 py-2 text-sm text-right font-medium">&#8369;{row.amount.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-sm text-right text-[#c9a227] font-medium">
+                            {collectionRate.total_active_members > 0
+                              ? ((row.count / collectionRate.total_active_members) * 100).toFixed(1)
+                              : "0.0"}%
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-50 font-semibold">
+                        <td className="px-3 py-2 text-sm">Total</td>
+                        <td className="px-3 py-2 text-sm text-right">{collectionRate.paid_members}</td>
+                        <td className="px-3 py-2 text-sm text-right">&#8369;{collectionRate.total_collected.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-sm text-right text-[#c9a227]">{collectionRate.collection_rate}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-gray-400 text-sm">No collection data for this year</div>
+                )}
               </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <div className="text-sm text-gray-500">Collection Rate</div>
-                <div className="text-2xl font-bold mt-1 text-[#c9a227]">{collectionRate.collection_rate}%</div>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <div className="text-sm text-gray-500">Total Collected</div>
-                <div className="text-2xl font-bold mt-1">&#8369;{collectionRate.total_collected.toLocaleString()}</div>
-              </div>
-            </div>
+            </>
           )}
         </div>
       )}

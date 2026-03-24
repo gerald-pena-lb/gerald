@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@supabase/supabase-js": "^2.100.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",

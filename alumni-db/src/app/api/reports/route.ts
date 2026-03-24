@@ -14,12 +14,28 @@ export async function GET(req: NextRequest) {
     const [totalRes, paidRes, collectedRes] = await Promise.all([
       supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "alive"),
       supabase.from("annual_dues").select("member_id", { count: "exact", head: true }).eq("year", duesYear),
-      supabase.from("annual_dues").select("amount").eq("year", duesYear),
+      supabase.from("annual_dues").select("amount, date_paid").eq("year", duesYear),
     ]);
 
     const totalMembers = totalRes.count || 0;
     const paidMembers = paidRes.count || 0;
-    const totalCollected = (collectedRes.data || []).reduce((sum, d) => sum + Number(d.amount), 0);
+    const duesData = collectedRes.data || [];
+    const totalCollected = duesData.reduce((sum, d) => sum + Number(d.amount), 0);
+
+    // Monthly breakdown of collections
+    const monthlyMap = new Map<string, { count: number; amount: number }>();
+    for (const d of duesData) {
+      const datePaid = (d as { date_paid: string }).date_paid;
+      if (!datePaid) continue;
+      const month = datePaid.substring(0, 7); // YYYY-MM
+      const existing = monthlyMap.get(month) || { count: 0, amount: 0 };
+      existing.count += 1;
+      existing.amount += Number(d.amount);
+      monthlyMap.set(month, existing);
+    }
+    const monthly = Array.from(monthlyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, data]) => ({ month, ...data }));
 
     return NextResponse.json({
       year: duesYear,
@@ -29,6 +45,7 @@ export async function GET(req: NextRequest) {
         ? ((paidMembers / totalMembers) * 100).toFixed(1)
         : "0.0",
       total_collected: totalCollected,
+      monthly,
     });
   }
 
