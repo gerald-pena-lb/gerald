@@ -79,6 +79,10 @@ const OUTCOMES = [
 
 /* ─── Helpers ─── */
 
+function pct(score: number, max: number): number {
+  return max > 0 ? Math.round((score / max) * 100) : 0;
+}
+
 function getWeekRange(weekStr: string) {
   const [year, week] = weekStr.split("-W").map(Number);
   const jan1 = new Date(year, 0, 1);
@@ -217,7 +221,7 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         <span style={{ fontWeight: 700, fontSize: 15 }}>{cat.name}</span>
-        <span style={{ fontWeight: 700, color, fontSize: 14 }}>{Math.round((cat.score / cat.maxScore) * 100)}%</span>
+        <span style={{ fontWeight: 700, color, fontSize: 14 }}>{pct(cat.score, cat.maxScore)}%</span>
         <span style={{ background: statusBg, color: statusTextColor, fontSize: 11, padding: "2px 10px", borderRadius: 12, fontWeight: 700 }}>
           {statusLabel}
         </span>
@@ -284,7 +288,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
             <div key={i} style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{cat.name}</span>
-                <span style={{ fontWeight: 700, color: stageColor, fontSize: 14 }}>{Math.round((cat.score / cat.maxScore) * 100)}%</span>
+                <span style={{ fontWeight: 700, color: stageColor, fontSize: 14 }}>{pct(cat.score, cat.maxScore)}%</span>
               </div>
               <ProgressBar value={cat.score} max={cat.maxScore} />
               <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8 }}>{cat.assessment}</div>
@@ -394,9 +398,9 @@ function AssistantWidget({ data }: { data: AppData }) {
         if (!a) return;
         const prospect = call.prospectName || "Unknown";
         const date = call.callDate || call.date;
-        const stages = (a.categories || []).map((c) => `${c.name}: ${Math.round((c.score / c.maxScore) * 100)}%`).join(", ");
+        const stages = (a.categories || []).map((c) => `${c.name}: ${pct(c.score, c.maxScore)}%`).join(", ");
         const flags = (a.coachingFlags || []).join("; ") || "None";
-        lines.push(`  Call: ${prospect} (${date}) | Score: ${Math.round((a.overallScore / a.maxScore) * 100)}% | Outcome: ${call.outcome || "pending"}`);
+        lines.push(`  Call: ${prospect} (${date}) | Score: ${pct(a.overallScore, a.maxScore)}% | Outcome: ${call.outcome || "pending"}`);
         lines.push(`    Stages: ${stages}`);
         lines.push(`    Flags: ${flags}`);
       });
@@ -1150,8 +1154,8 @@ export default function Page() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {call.analysis && (
                         <div style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: 22, fontWeight: 800, color: overallScoreColor(call.analysis.overallScore / call.analysis.maxScore) }}>
-                            {Math.round((call.analysis.overallScore / call.analysis.maxScore) * 100)}%
+                          <div style={{ fontSize: 22, fontWeight: 800, color: overallScoreColor(call.analysis.maxScore > 0 ? call.analysis.overallScore / call.analysis.maxScore : 0) }}>
+                            {pct(call.analysis.overallScore, call.analysis.maxScore)}%
                           </div>
                         </div>
                       )}
