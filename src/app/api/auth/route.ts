@@ -10,22 +10,20 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("app_users")
-    .select("id, username, display_name, role")
+    .select("id, username, password, display_name, role")
     .eq("username", username)
     .single();
 
-  if (error || !data) {
+  if (error) {
+    console.error("Auth query error:", error.message);
+    // Table likely doesn't exist yet - return helpful message
+    if (error.message.includes("relation") || error.code === "42P01" || error.message.includes("does not exist")) {
+      return NextResponse.json({ error: "app_users table not found. Please run the migration SQL in Supabase." }, { status: 500 });
+    }
     return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
   }
 
-  // Check password
-  const { data: fullUser } = await supabase
-    .from("app_users")
-    .select("password")
-    .eq("id", data.id)
-    .single();
-
-  if (!fullUser || fullUser.password !== password) {
+  if (!data || data.password !== password) {
     return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
   }
 
