@@ -59,11 +59,13 @@ export default function ReportsPage() {
       if (!start || !end) return;
       fetch(`/api/reports?type=financial&start=${start}&end=${end}`)
         .then((r) => r.json())
-        .then(setReport);
+        .then(setReport)
+        .catch(() => {});
     } else {
       fetch(`/api/reports?type=collection_rate&year=${year}`)
         .then((r) => r.json())
-        .then(setCollectionRate);
+        .then(setCollectionRate)
+        .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, filter, year, startDate, endDate]);
