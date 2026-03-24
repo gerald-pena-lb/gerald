@@ -21,8 +21,9 @@ export default function Nav() {
     <nav className="bg-[#1e3a5f] text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="font-bold text-xl tracking-tight">
-            UP Alpha Sigma Fraternity Alumni Association
+          <Link href="/" className="font-bold tracking-tight leading-tight">
+            <span className="block text-xl">UP Alpha Sigma Fraternity</span>
+            <span className="block text-sm font-medium text-white/80">Alumni Association</span>
           </Link>
           <div className="flex items-center space-x-1">
             {links.map((link) => (
