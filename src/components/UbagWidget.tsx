@@ -16,22 +16,27 @@ const LOADING_PHRASES = [
   "Ningit ka muna sa eyabab sa dokil habang nagiisip ako...",
 ];
 
-function getRandomLoadingPhrase() {
-  return LOADING_PHRASES[Math.floor(Math.random() * LOADING_PHRASES.length)];
-}
-
 export default function UbagWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionsExecuted, setActionsExecuted] = useState<string[]>([]);
-  const [loadingPhrase, setLoadingPhrase] = useState("");
+  const [loadingIdx, setLoadingIdx] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  // Cycle through loading phrases every 3 seconds while loading
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingIdx((prev) => (prev + 1) % LOADING_PHRASES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   async function handleSend() {
     const text = input.trim();
@@ -42,7 +47,7 @@ export default function UbagWidget() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
-    setLoadingPhrase(getRandomLoadingPhrase());
+    setLoadingIdx(0);
     setActionsExecuted([]);
 
     try {
@@ -154,7 +159,7 @@ export default function UbagWidget() {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 px-3 py-2 rounded-lg text-sm text-gray-600 italic">
-                  {loadingPhrase}
+                  {LOADING_PHRASES[loadingIdx]}
                 </div>
               </div>
             )}
