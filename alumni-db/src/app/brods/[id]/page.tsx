@@ -8,6 +8,7 @@ interface Member {
   id: number;
   last_name: string;
   first_name: string;
+  chapter: string;
   batch_name: string;
   batch_letter: string;
   year: number;
@@ -50,6 +51,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
     setForm({
       last_name: data.last_name || "",
       first_name: data.first_name || "",
+      chapter: data.chapter || "",
       batch_name: data.batch_name || "",
       batch_letter: data.batch_letter || "",
       year: data.year?.toString() || "",
@@ -180,6 +182,19 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ))}
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Chapter</label>
+                <select
+                  value={form.chapter || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, chapter: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="">Select Chapter</option>
+                  <option value="Manila">Manila</option>
+                  <option value="Los Banos">Los Banos</option>
+                  <option value="Diliman">Diliman</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                 <select
                   value={form.industry || ""}
@@ -215,6 +230,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           <div className="grid grid-cols-2 gap-4">
             <Info label="Last Name" value={member.last_name} />
             <Info label="First Name" value={member.first_name} />
+            <Info label="Chapter" value={member.chapter} />
             <Info label="Batch" value={`${member.batch_name || ""} ${member.batch_letter ? `(${member.batch_letter})` : ""}`} />
             <Info label="Year" value={member.year?.toString()} />
             <Info label="Phone" value={member.phone_number} />

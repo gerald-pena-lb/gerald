@@ -8,6 +8,7 @@ interface Member {
   id: number;
   last_name: string;
   first_name: string;
+  chapter: string;
   batch_name: string;
   batch_letter: string;
   year: number;
@@ -157,6 +158,7 @@ export default function BrodsPage() {
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Name</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">First Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chapter</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Year</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
@@ -178,6 +180,7 @@ export default function BrodsPage() {
                     {m.first_name}
                   </Link>
                 </td>
+                <td className="px-4 py-3 text-sm text-gray-600">{m.chapter}</td>
                 <td className="px-4 py-3 text-sm text-gray-600">
                   {m.batch_name} {m.batch_letter && `(${m.batch_letter})`}
                 </td>
@@ -200,7 +203,7 @@ export default function BrodsPage() {
             ))}
             {members.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500 text-sm">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500 text-sm">
                   No members found. Add your first brod or upload a CSV.
                 </td>
               </tr>

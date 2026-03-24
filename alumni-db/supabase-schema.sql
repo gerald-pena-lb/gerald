@@ -5,6 +5,7 @@ CREATE TABLE members (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   last_name TEXT NOT NULL,
   first_name TEXT NOT NULL,
+  chapter TEXT CHECK (chapter IN ('Manila', 'Los Banos', 'Diliman')),
   batch_name TEXT,
   batch_letter TEXT,
   year INTEGER,

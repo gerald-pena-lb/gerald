@@ -42,6 +42,7 @@ export async function PUT(
     .update({
       last_name: body.last_name,
       first_name: body.first_name,
+      chapter: body.chapter || null,
       batch_name: body.batch_name || null,
       batch_letter: body.batch_letter || null,
       year: body.year || null,

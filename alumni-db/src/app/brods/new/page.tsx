@@ -9,6 +9,7 @@ export default function NewBrodPage() {
   const [form, setForm] = useState({
     last_name: "",
     first_name: "",
+    chapter: "",
     batch_name: "",
     batch_letter: "",
     year: "",
@@ -68,6 +69,20 @@ export default function NewBrodPage() {
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Chapter</label>
+          <select
+            value={form.chapter}
+            onChange={(e) => update("chapter", e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+          >
+            <option value="">Select Chapter</option>
+            <option value="Manila">Manila</option>
+            <option value="Los Banos">Los Banos</option>
+            <option value="Diliman">Diliman</option>
+          </select>
         </div>
 
         <div className="grid grid-cols-3 gap-4">

@@ -1,6 +1,9 @@
 -- Migration: Add authentication, project management tables, split name fields
 -- Run this in the Supabase SQL Editor on existing databases
 
+-- Add chapter column to members
+ALTER TABLE members ADD COLUMN IF NOT EXISTS chapter TEXT CHECK (chapter IN ('Manila', 'Los Banos', 'Diliman'));
+
 -- Split full_name into last_name and first_name
 ALTER TABLE members ADD COLUMN IF NOT EXISTS last_name TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS first_name TEXT;
