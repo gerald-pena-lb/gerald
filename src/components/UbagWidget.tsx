@@ -56,7 +56,7 @@ export default function UbagWidget() {
         setActionsExecuted(data.actions_executed);
       }
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Failed to connect to Ubag. Please try again." }]);
+      setMessages([...newMessages, { role: "assistant", content: "Ay brod, parang may problema sa connection. Try mo ulit!" }]);
     } finally {
       setLoading(false);
     }
@@ -105,8 +105,8 @@ export default function UbagWidget() {
             {messages.length === 0 && (
               <div className="text-center text-gray-400 text-sm mt-8">
                 <img src={UBAG_ICON} alt="Ubag" className="w-12 h-12 rounded-full object-cover mx-auto mb-3" />
-                <p className="font-medium text-gray-600">Kumusta, ako si Ubag!</p>
-                <p className="mt-1">Pwede akong tumulong gumawa ng projects, magdagdag ng brods, at mag-organisa ng tasks. I-paste lang ang data mo o sabihin kung ano ang kailangan mo.</p>
+                <p className="font-medium text-gray-600">Orayt brod! Ako si Ubag!</p>
+                <p className="mt-1">Ano bang kailangan mo brod? Pwede akong gumawa ng projects, magdagdag ng brods, at mag-organisa ng tasks. I-paste lang ang data mo o sabihin mo lang!</p>
               </div>
             )}
 
@@ -140,12 +140,8 @@ export default function UbagWidget() {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 px-3 py-2 rounded-lg text-sm text-gray-500">
-                  <span className="inline-flex gap-1">
-                    <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
-                    <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
-                    <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
-                  </span>
+                <div className="bg-gray-100 px-3 py-2 rounded-lg text-sm text-gray-600 italic">
+                  Teka brod, isipin ko muna...
                 </div>
               </div>
             )}
@@ -165,7 +161,7 @@ export default function UbagWidget() {
                     handleSend();
                   }
                 }}
-                placeholder="I-paste ang data o ilarawan ang kailangan mo..."
+                placeholder="Sabihin mo lang brod, ano kailangan mo..."
                 rows={2}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-[#1e3a5f]"
               />
