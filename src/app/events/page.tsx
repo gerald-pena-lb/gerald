@@ -12,11 +12,19 @@ interface Event {
   status: string;
 }
 
+interface TaskSummary {
+  assigned_to: string;
+  completed: number;
+  total: number;
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
+  const [taskSummaries, setTaskSummaries] = useState<TaskSummary[]>([]);
 
   useEffect(() => {
     fetch("/api/events?type=event").then((r) => r.json()).then(setEvents).catch(() => {});
+    fetch("/api/task-summary").then((r) => r.json()).then(setTaskSummaries).catch(() => {});
   }, []);
 
   return (
@@ -30,6 +38,32 @@ export default function EventsPage() {
           New Event
         </Link>
       </div>
+
+      {/* Task Summary Per User */}
+      {taskSummaries.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Task Progress by Member</h2>
+          <div className="flex flex-wrap gap-3">
+            {taskSummaries.map((s) => (
+              <div
+                key={s.assigned_to}
+                className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2"
+              >
+                <span className="text-sm font-medium text-gray-900">{s.assigned_to}</span>
+                <span
+                  className={`text-sm font-bold ${
+                    s.completed === s.total && s.total > 0
+                      ? "text-green-600"
+                      : "text-[#c9a227]"
+                  }`}
+                >
+                  {s.completed}/{s.total}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {events.map((ev) => (

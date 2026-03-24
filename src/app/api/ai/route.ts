@@ -12,7 +12,7 @@ MAHALAGA:
 - Gumamit ng mga expression tulad ng: "ayos", "solid!", "orayt brod!", "G!", "nice brod!", "eto na brod!", "panalo!", "sige brod"
 - Kapag nag-execute ka ng action, mag-react ka ng enthusiastic: "Solid brod! Nagawa ko na!" o "Ayos! Tapos na brod!"
 - Maging chill, witty, at kapatid ang dating mo. Hindi formal. Hindi robot.
-- Kapag hindi mo kayang gawin ang request, sabihin: "Edni brod, di ko kaya yan" o "Dehins yan eto na lang ( \u203f * \u203f )" tapos mag-suggest ng alternative.
+- Kapag hindi mo kayang gawin ang request, sabihin: "Edni brod, di ko kaya yan" o "Dehins yan eto na lang ( ‿ * ‿ )" tapos mag-suggest ng alternative.
 
 Pwede kang gumawa ng mga actions gamit ang JSON action blocks:
 
@@ -26,9 +26,34 @@ Pwede kang gumawa ng mga actions gamit ang JSON action blocks:
 {"action":"add_members","members":[{"last_name":"...","first_name":"...","chapter":"Manila|Los Banos|Diliman","batch_name":"...","batch_letter":"...","year":2000,"phone_number":"...","current_company":"...","title":"...","industry":"...","status":"alive|deceased"}]}
 \`\`\`
 
+3. **Gumawa ng event**:
+\`\`\`action
+{"action":"create_event","name":"...","description":"...","date":"YYYY-MM-DD","status":"upcoming|ongoing|completed"}
+\`\`\`
+
+4. **Mag-upload ng meeting minutes** (i-paste lang ang raw text at i-pa-parse sa AI):
+\`\`\`action
+{"action":"upload_minutes","raw_text":"...the raw meeting text..."}
+\`\`\`
+
+5. **Mag-query ng finances** (para makita ang financial summary):
+\`\`\`action
+{"action":"query_finances","year":"2026"}
+\`\`\`
+
+6. **Mag-generate ng report** (financial o collection rate):
+\`\`\`action
+{"action":"generate_report","type":"financial|collection_rate","year":"2026"}
+\`\`\`
+
 Kapag nag-paste ang user ng unstructured text:
 - Para sa projects: I-parse ito sa structured project na may logical sections at tasks.
 - Para sa members/brods: I-parse ang mga pangalan at available data. I-match ang fields sa best effort mo. Para sa chapter, i-map ang common variations (hal., "LB" -> "Los Banos", "UP Diliman" -> "Diliman", "Manila" -> "Manila"). Default status ay "alive". I-infer ang fields mula sa context kung posible.
+- Para sa minutes: I-parse at i-upload gamit ang upload_minutes action.
+
+Kapag nagtatanong ang user tungkol sa finances, dues, donations, o expenditures, gamitin ang query_finances action para kunin ang data at sagutin ang tanong nila.
+
+Kapag humingi ng report ang user, gamitin ang generate_report action.
 
 Ipaliwanag muna kung ano ang gagawin mo bago mag-output ng action block. Kung hindi malinaw ang data, sabihin ang mga assumptions mo.
 
@@ -72,11 +97,17 @@ export async function POST(req: NextRequest) {
     for (const action of actions) {
       const a = action as Record<string, unknown>;
       if (a.action === "create_project") {
-        const result = await createProject(a);
-        results.push(result);
+        results.push(await createProject(a));
       } else if (a.action === "add_members") {
-        const result = await addMembers(a);
-        results.push(result);
+        results.push(await addMembers(a));
+      } else if (a.action === "create_event") {
+        results.push(await createEvent(a));
+      } else if (a.action === "upload_minutes") {
+        results.push(await uploadMinutes(a));
+      } else if (a.action === "query_finances") {
+        results.push(await queryFinances(a));
+      } else if (a.action === "generate_report") {
+        results.push(await generateReport(a));
       }
     }
 
@@ -170,4 +201,137 @@ async function addMembers(data: Record<string, unknown>): Promise<string> {
   if (error) return `Failed to add members: ${error.message}`;
 
   return `Added ${rows.length} brod${rows.length > 1 ? "s" : ""} to the database`;
+}
+
+async function createEvent(data: Record<string, unknown>): Promise<string> {
+  const { error } = await supabase
+    .from("events")
+    .insert({
+      name: data.name as string,
+      description: (data.description as string) || null,
+      date: (data.date as string) || new Date().toISOString().split("T")[0],
+      type: "event",
+      status: (data.status as string) || "upcoming",
+    });
+
+  if (error) return `Failed to create event: ${error.message}`;
+  return `Event "${data.name}" created`;
+}
+
+async function uploadMinutes(data: Record<string, unknown>): Promise<string> {
+  const rawText = data.raw_text as string;
+  if (!rawText) return "No meeting text provided";
+
+  try {
+    // Use the AI summarizer to parse the raw text
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      system: `You are a meeting minutes parser for UP Alpha Sigma Fraternity Alumni Association. Given raw meeting text, extract and return ONLY valid JSON with this structure:
+{
+  "title": "Brief title",
+  "meeting_date": "YYYY-MM-DD or null",
+  "location": "location or null",
+  "participants": [{"name": "Full Name", "role": "role or null"}],
+  "updates": [{"topic": "topic", "details": "summary", "by": "person or null"}],
+  "action_items": [{"task": "what to do", "assigned_to": "person", "deadline": "deadline or null"}]
+}`,
+      messages: [{ role: "user", content: rawText }],
+    });
+
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+    let summary;
+    try {
+      summary = JSON.parse(text.trim());
+    } catch {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        summary = JSON.parse(jsonMatch[0]);
+      } else {
+        return "Failed to parse meeting minutes";
+      }
+    }
+
+    const { error } = await supabase.from("meeting_summaries").insert({
+      raw_text: rawText,
+      title: summary.title || null,
+      meeting_date: summary.meeting_date || null,
+      location: summary.location || null,
+      participants: summary.participants || [],
+      updates: summary.updates || [],
+      action_items: summary.action_items || [],
+    });
+
+    if (error) return `Failed to save minutes: ${error.message}`;
+    return `Meeting minutes "${summary.title || "Untitled"}" uploaded and parsed`;
+  } catch {
+    return "Failed to process meeting minutes";
+  }
+}
+
+async function queryFinances(data: Record<string, unknown>): Promise<string> {
+  const year = (data.year as string) || new Date().getFullYear().toString();
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const [duesRes, donationsRes, expendituresRes] = await Promise.all([
+    supabase.from("annual_dues").select("amount, date_paid").eq("year", Number(year)),
+    supabase.from("donations").select("amount, date_given").gte("date_given", startDate).lte("date_given", endDate),
+    supabase.from("expenditures").select("amount, date, description").gte("date", startDate).lte("date", endDate),
+  ]);
+
+  const totalDues = (duesRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const totalDonations = (donationsRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const totalExpenditures = (expendituresRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const duesCount = duesRes.data?.length || 0;
+  const donationsCount = donationsRes.data?.length || 0;
+
+  return `Financial Summary for ${year}: Dues collected: ₱${totalDues.toLocaleString()} (${duesCount} payments) | Donations: ₱${totalDonations.toLocaleString()} (${donationsCount} donations) | Total Income: ₱${(totalDues + totalDonations).toLocaleString()} | Expenditures: ₱${totalExpenditures.toLocaleString()} | Net: ₱${(totalDues + totalDonations - totalExpenditures).toLocaleString()}`;
+}
+
+async function generateReport(data: Record<string, unknown>): Promise<string> {
+  const type = (data.type as string) || "financial";
+  const year = (data.year as string) || new Date().getFullYear().toString();
+
+  if (type === "collection_rate") {
+    const [totalRes, paidRes, collectedRes] = await Promise.all([
+      supabase.from("members").select("id", { count: "exact", head: true }).eq("status", "alive"),
+      supabase.from("annual_dues").select("member_id", { count: "exact", head: true }).eq("year", Number(year)),
+      supabase.from("annual_dues").select("amount").eq("year", Number(year)),
+    ]);
+
+    const totalMembers = totalRes.count || 0;
+    const paidMembers = paidRes.count || 0;
+    const totalCollected = (collectedRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+    const rate = totalMembers > 0 ? ((paidMembers / totalMembers) * 100).toFixed(1) : "0.0";
+
+    return `Collection Rate Report ${year}: Active Members: ${totalMembers} | Paid: ${paidMembers} | Rate: ${rate}% | Total Collected: ₱${totalCollected.toLocaleString()}`;
+  }
+
+  // Financial report
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const [duesRes, donationsRes, expendituresRes] = await Promise.all([
+    supabase.from("annual_dues").select("amount, date_paid").gte("date_paid", startDate).lte("date_paid", endDate),
+    supabase.from("donations").select("amount, date_given").gte("date_given", startDate).lte("date_given", endDate),
+    supabase.from("expenditures").select("amount, date, description").gte("date", startDate).lte("date", endDate),
+  ]);
+
+  const totalDues = (duesRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const totalDonations = (donationsRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const totalExpenditures = (expendituresRes.data || []).reduce((s, d) => s + Number(d.amount), 0);
+  const net = totalDues + totalDonations - totalExpenditures;
+
+  const topExpenses = (expendituresRes.data || [])
+    .sort((a, b) => Number(b.amount) - Number(a.amount))
+    .slice(0, 5)
+    .map((e) => `${e.description}: ₱${Number(e.amount).toLocaleString()}`)
+    .join(", ");
+
+  return `Financial Report ${year}: Dues: ₱${totalDues.toLocaleString()} | Donations: ₱${totalDonations.toLocaleString()} | Income: ₱${(totalDues + totalDonations).toLocaleString()} | Expenditures: ₱${totalExpenditures.toLocaleString()} | Net: ₱${net.toLocaleString()}${topExpenses ? ` | Top expenses: ${topExpenses}` : ""}`;
 }
