@@ -127,9 +127,9 @@ function stageStatus(cat: AnalysisCategory): "green" | "amber" | "red" {
   return "red";
 }
 
-function overallScoreColor(score: number): string {
-  if (score >= 80) return COLORS.green;
-  if (score >= 70) return COLORS.yellow;
+function overallScoreColor(pct: number): string {
+  if (pct >= 0.9) return COLORS.green;
+  if (pct >= 0.8) return COLORS.yellow;
   return COLORS.red;
 }
 
@@ -156,15 +156,15 @@ function ProgressBar({ value, max, height = 8 }: { value: number; max: number; h
 
 function ScoreRing({ score, max, useOverallColor }: { score: number; max: number; useOverallColor?: boolean }) {
   const pct = max > 0 ? score / max : 0;
-  const color = useOverallColor ? overallScoreColor(score) : scoreColor(pct);
+  const pctDisplay = Math.round(pct * 100);
+  const color = useOverallColor ? overallScoreColor(pct) : scoreColor(pct);
   const circumference = 2 * Math.PI * 40;
   const offset = circumference * (1 - pct);
   return (
     <svg width="100" height="100" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="8" />
       <circle cx="50" cy="50" r="40" fill="none" stroke={color} strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" transform="rotate(-90 50 50)" style={{ transition: "stroke-dashoffset 0.5s" }} />
-      <text x="50" y="46" textAnchor="middle" fontSize="18" fontWeight="700" fill={color}>{score}</text>
-      <text x="50" y="62" textAnchor="middle" fontSize="11" fill={COLORS.textSecondary}>/ {max}</text>
+      <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontSize="20" fontWeight="700" fill={color}>{pctDisplay}%</text>
     </svg>
   );
 }
@@ -217,7 +217,7 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
         <span style={{ fontWeight: 700, fontSize: 15 }}>{cat.name}</span>
-        <span style={{ fontWeight: 700, color, fontSize: 14 }}>{cat.score}/{cat.maxScore}</span>
+        <span style={{ fontWeight: 700, color, fontSize: 14 }}>{Math.round((cat.score / cat.maxScore) * 100)}%</span>
         <span style={{ background: statusBg, color: statusTextColor, fontSize: 11, padding: "2px 10px", borderRadius: 12, fontWeight: 700 }}>
           {statusLabel}
         </span>
@@ -284,7 +284,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
             <div key={i} style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{cat.name}</span>
-                <span style={{ fontWeight: 700, color: stageColor, fontSize: 14 }}>{cat.score}/{cat.maxScore}</span>
+                <span style={{ fontWeight: 700, color: stageColor, fontSize: 14 }}>{Math.round((cat.score / cat.maxScore) * 100)}%</span>
               </div>
               <ProgressBar value={cat.score} max={cat.maxScore} />
               <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 8 }}>{cat.assessment}</div>
@@ -394,9 +394,9 @@ function AssistantWidget({ data }: { data: AppData }) {
         if (!a) return;
         const prospect = call.prospectName || "Unknown";
         const date = call.callDate || call.date;
-        const stages = (a.categories || []).map((c) => `${c.name}: ${c.score}/${c.maxScore}`).join(", ");
+        const stages = (a.categories || []).map((c) => `${c.name}: ${Math.round((c.score / c.maxScore) * 100)}%`).join(", ");
         const flags = (a.coachingFlags || []).join("; ") || "None";
-        lines.push(`  Call: ${prospect} (${date}) | Score: ${a.overallScore}/${a.maxScore} | Outcome: ${call.outcome || "pending"}`);
+        lines.push(`  Call: ${prospect} (${date}) | Score: ${Math.round((a.overallScore / a.maxScore) * 100)}% | Outcome: ${call.outcome || "pending"}`);
         lines.push(`    Stages: ${stages}`);
         lines.push(`    Flags: ${flags}`);
       });
@@ -1150,10 +1150,9 @@ export default function Page() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {call.analysis && (
                         <div style={{ textAlign: "center" }}>
-                          <div style={{ fontSize: 22, fontWeight: 800, color: overallScoreColor(call.analysis.overallScore) }}>
-                            {call.analysis.overallScore}
+                          <div style={{ fontSize: 22, fontWeight: 800, color: overallScoreColor(call.analysis.overallScore / call.analysis.maxScore) }}>
+                            {Math.round((call.analysis.overallScore / call.analysis.maxScore) * 100)}%
                           </div>
-                          <div style={{ fontSize: 10, color: COLORS.textSecondary, fontWeight: 600 }}>/ {call.analysis.maxScore}</div>
                         </div>
                       )}
                       <button onClick={() => deleteCall(selectedAgent.id, call.id)} style={linkBtn}>Delete</button>
