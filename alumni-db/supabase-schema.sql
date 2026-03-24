@@ -44,6 +44,8 @@ CREATE TABLE events (
   date TEXT NOT NULL,
   type TEXT DEFAULT 'event' CHECK (type IN ('event', 'project')),
   status TEXT DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'ongoing', 'completed')),
+  goals TEXT,
+  due_date TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -71,5 +73,44 @@ CREATE TABLE expenditures (
   date TEXT NOT NULL,
   event_id BIGINT REFERENCES events(id) ON DELETE SET NULL,
   remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- App users for authentication
+CREATE TABLE app_users (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  role TEXT DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Seed admin user
+INSERT INTO app_users (username, password, display_name, role)
+VALUES ('Gerald', 'ubag1964', 'Gerald', 'admin');
+
+-- Project sections (like Asana sections)
+CREATE TABLE project_sections (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  project_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Project tasks (within sections)
+CREATE TABLE project_tasks (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  section_id BIGINT NOT NULL REFERENCES project_sections(id) ON DELETE CASCADE,
+  project_id BIGINT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+  due_date TEXT,
+  remarks TEXT,
+  notes TEXT,
+  assigned_to TEXT,
+  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );

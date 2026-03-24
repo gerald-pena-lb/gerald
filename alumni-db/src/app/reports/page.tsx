@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { generateFinancialPDF } from "@/lib/pdf";
 
 interface FinancialReport {
   summary: {
@@ -15,6 +16,7 @@ interface FinancialReport {
     donations: { month: string; total: number }[];
     expenditures: { month: string; total: number }[];
   };
+  filters: { start: string; end: string };
 }
 
 interface CollectionRate {
@@ -69,6 +71,11 @@ export default function ReportsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, filter, year, startDate, endDate]);
+
+  function handleDownloadPDF() {
+    if (!report) return;
+    generateFinancialPDF(report);
+  }
 
   return (
     <div>
@@ -129,6 +136,14 @@ export default function ReportsPage() {
                   />
                 </>
               )}
+              {report && (
+                <button
+                  onClick={handleDownloadPDF}
+                  className="ml-auto px-4 py-1.5 bg-[#c9a227] text-white rounded-md text-sm hover:bg-[#b08d20]"
+                >
+                  Download PDF
+                </button>
+              )}
             </div>
           </div>
 
@@ -180,7 +195,7 @@ export default function ReportsPage() {
               </div>
               <div className="bg-white rounded-lg shadow p-5">
                 <div className="text-sm text-gray-500">Total Collected</div>
-                <div className="text-2xl font-bold mt-1">₱{collectionRate.total_collected.toLocaleString()}</div>
+                <div className="text-2xl font-bold mt-1">&#8369;{collectionRate.total_collected.toLocaleString()}</div>
               </div>
             </div>
           )}
@@ -195,7 +210,7 @@ function SummaryCard({ label, value, color }: { label: string; value: number; co
     <div className="bg-white rounded-lg shadow p-5">
       <div className="text-sm text-gray-500">{label}</div>
       <div className={`text-xl font-bold mt-1 ${color || "text-gray-900"}`}>
-        ₱{value.toLocaleString()}
+        &#8369;{value.toLocaleString()}
       </div>
     </div>
   );
@@ -211,7 +226,7 @@ function BreakdownTable({ title, data }: { title: string; data: { month: string;
             {data.map((row) => (
               <tr key={row.month}>
                 <td className="py-1.5 text-sm text-gray-600">{row.month}</td>
-                <td className="py-1.5 text-sm text-right font-medium">₱{row.total.toLocaleString()}</td>
+                <td className="py-1.5 text-sm text-right font-medium">&#8369;{row.total.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

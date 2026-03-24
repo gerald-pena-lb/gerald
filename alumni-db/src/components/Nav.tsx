@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const links = [
-  { href: "/brods", label: "Brods" },
-  { href: "/projects", label: "Projects" },
-  { href: "/events", label: "Events" },
-  { href: "/finances", label: "Finances" },
-  { href: "/reports", label: "Reports" },
-];
+import { useAuth } from "@/lib/auth";
 
 export default function Nav() {
   const pathname = usePathname();
+  const { user, logout, isAdmin } = useAuth();
+
+  const links = [
+    { href: "/brods", label: "Brods" },
+    { href: "/projects", label: "Projects" },
+    { href: "/events", label: "Events" },
+    { href: "/finances", label: "Finances" },
+    { href: "/reports", label: "Reports" },
+    ...(isAdmin ? [{ href: "/users", label: "Users" }] : []),
+  ];
 
   return (
     <nav className="bg-[#1e3a5f] text-white shadow-lg">
@@ -21,7 +24,7 @@ export default function Nav() {
           <Link href="/" className="font-bold text-xl tracking-tight">
             UP Alpha Sigma Fraternity Alumni Association
           </Link>
-          <div className="flex space-x-1">
+          <div className="flex items-center space-x-1">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -35,6 +38,20 @@ export default function Nav() {
                 {link.label}
               </Link>
             ))}
+            {user && (
+              <div className="flex items-center ml-4 pl-4 border-l border-white/20">
+                <span className="text-sm text-white/70 mr-3">
+                  {user.display_name}
+                  {isAdmin && <span className="ml-1 text-[#c9a227] text-xs">(Admin)</span>}
+                </span>
+                <button
+                  onClick={logout}
+                  className="px-3 py-1.5 rounded-md text-sm text-white/80 hover:bg-white/10 hover:text-white"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
