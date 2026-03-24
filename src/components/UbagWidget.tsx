@@ -7,6 +7,8 @@ interface Message {
   content: string;
 }
 
+const UBAG_ICON = "https://lh5.googleusercontent.com/swiXiaqSWjfVRdkMPqn4zLc4yXpbs-vg-99-87VSXPpmfofHi8QPLVx7mEJ7aapCXG81UY7bIOGo7oNFPoMRaMZOpNPxXIz90AlFzU8TE8nBIrwXwYQ2MOE2Ix58PQ0hJk2s80c0v0-04HnweA";
+
 export default function UbagWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -72,17 +74,17 @@ export default function UbagWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[#1e3a5f] text-white rounded-full shadow-lg hover:bg-[#152c4a] transition-all z-50 flex items-center justify-center"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:scale-105 transition-all z-50 flex items-center justify-center overflow-hidden"
         title="Chat with Ubag"
       >
         {open ? (
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <div className="w-full h-full bg-[#1e3a5f] flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
         ) : (
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
+          <img src={UBAG_ICON} alt="Ubag" className="w-full h-full object-cover" />
         )}
       </button>
 
@@ -91,7 +93,7 @@ export default function UbagWidget() {
         <div className="fixed bottom-24 right-6 w-96 h-[32rem] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden">
           {/* Header */}
           <div className="bg-[#1e3a5f] text-white px-4 py-3 flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 bg-[#c9a227] rounded-full flex items-center justify-center text-sm font-bold">U</div>
+            <img src={UBAG_ICON} alt="Ubag" className="w-8 h-8 rounded-full object-cover" />
             <div>
               <div className="font-semibold text-sm">Ubag</div>
               <div className="text-xs text-white/70">AI Assistant</div>
@@ -102,9 +104,9 @@ export default function UbagWidget() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-gray-400 text-sm mt-8">
-                <div className="w-12 h-12 bg-[#1e3a5f] rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">U</div>
-                <p className="font-medium text-gray-600">Hi, I&apos;m Ubag!</p>
-                <p className="mt-1">I can help you create projects, add brods, and organize tasks. Just paste your data or tell me what you need.</p>
+                <img src={UBAG_ICON} alt="Ubag" className="w-12 h-12 rounded-full object-cover mx-auto mb-3" />
+                <p className="font-medium text-gray-600">Kumusta, ako si Ubag!</p>
+                <p className="mt-1">Pwede akong tumulong gumawa ng projects, magdagdag ng brods, at mag-organisa ng tasks. I-paste lang ang data mo o sabihin kung ano ang kailangan mo.</p>
               </div>
             )}
 
@@ -163,7 +165,7 @@ export default function UbagWidget() {
                     handleSend();
                   }
                 }}
-                placeholder="Paste data or describe what you need..."
+                placeholder="I-paste ang data o ilarawan ang kailangan mo..."
                 rows={2}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-[#1e3a5f]"
               />
