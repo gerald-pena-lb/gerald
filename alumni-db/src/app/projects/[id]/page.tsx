@@ -170,22 +170,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header with completion */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div className="text-xs font-medium text-gray-500 uppercase mb-1">Project</div>
-          <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{project.name}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => generateProjectPDF(project)}
-            className="px-4 py-2 bg-[#c9a227] text-white rounded-md text-sm hover:bg-[#b08d20]"
+            className="px-3 sm:px-4 py-2 bg-[#c9a227] text-white rounded-md text-sm hover:bg-[#b08d20]"
           >
-            Download Report (PDF)
+            PDF
           </button>
-          <button onClick={() => setEditing(!editing)} className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+          <button onClick={() => setEditing(!editing)} className="px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50">
             {editing ? "Cancel" : "Edit"}
           </button>
-          <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
+          <button onClick={handleDelete} className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">
             Delete
           </button>
         </div>
@@ -226,7 +226,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={3} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                 <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
@@ -391,7 +391,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   {/* Expanded task detail */}
                   {expandedTask === task.id && (
                     <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
-                      <div className="grid grid-cols-2 gap-3 pt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Task Name</label>
                           <input

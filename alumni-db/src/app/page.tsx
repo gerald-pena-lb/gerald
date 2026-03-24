@@ -34,15 +34,15 @@ export default function Home() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           UP Alpha Sigma Fraternity
         </h1>
         <p className="text-gray-600 mt-1">Alumni Database & CRM</p>
       </div>
 
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard label="Total Brods" value={stats.totalMembers} />
           <StatCard label="Active Brods" value={stats.activeMembers} />
           <StatCard
@@ -56,7 +56,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         <QuickLink href="/brods" title="Brods" desc="View and manage alumni members" />
         <QuickLink href="/brods/new" title="Add New Brod" desc="Register a new alumni member" />
         <QuickLink href="/events" title="Events" desc="Manage events and meeting minutes" />

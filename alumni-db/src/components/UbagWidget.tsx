@@ -9,12 +9,24 @@ interface Message {
 
 const UBAG_ICON = "https://lh5.googleusercontent.com/swiXiaqSWjfVRdkMPqn4zLc4yXpbs-vg-99-87VSXPpmfofHi8QPLVx7mEJ7aapCXG81UY7bIOGo7oNFPoMRaMZOpNPxXIz90AlFzU8TE8nBIrwXwYQ2MOE2Ix58PQ0hJk2s80c0v0-04HnweA";
 
+const LOADING_PHRASES = [
+  "Teka brod, isipin ko muna...",
+  "Skaler brod, nagiisip ako...",
+  "Yosi ka muna, wait lang...",
+  "Ningit ka muna sa eyabab sa dokil habang nagiisip ako...",
+];
+
+function getRandomLoadingPhrase() {
+  return LOADING_PHRASES[Math.floor(Math.random() * LOADING_PHRASES.length)];
+}
+
 export default function UbagWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionsExecuted, setActionsExecuted] = useState<string[]>([]);
+  const [loadingPhrase, setLoadingPhrase] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +42,7 @@ export default function UbagWidget() {
     setMessages(newMessages);
     setInput("");
     setLoading(true);
+    setLoadingPhrase(getRandomLoadingPhrase());
     setActionsExecuted([]);
 
     try {
@@ -41,7 +54,7 @@ export default function UbagWidget() {
 
       if (!res.ok) {
         const err = await res.json();
-        setMessages([...newMessages, { role: "assistant", content: `Error: ${err.error || "Something went wrong"}` }]);
+        setMessages([...newMessages, { role: "assistant", content: `Dehins yan brod: ${err.error || "may problema"}` }]);
         return;
       }
 
@@ -56,7 +69,7 @@ export default function UbagWidget() {
         setActionsExecuted(data.actions_executed);
       }
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Ay brod, parang may problema sa connection. Try mo ulit!" }]);
+      setMessages([...newMessages, { role: "assistant", content: "Dehins yan brod, parang walang connection. Try mo ulit!" }]);
     } finally {
       setLoading(false);
     }
@@ -74,7 +87,7 @@ export default function UbagWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:scale-105 transition-all z-50 flex items-center justify-center overflow-hidden"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg hover:scale-105 transition-all z-50 flex items-center justify-center overflow-hidden"
         title="Chat with Ubag"
       >
         {open ? (
@@ -90,7 +103,7 @@ export default function UbagWidget() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 h-[32rem] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden">
+        <div className="fixed bottom-24 right-4 left-4 sm:left-auto sm:w-96 h-[calc(100vh-8rem)] sm:h-[32rem] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden">
           {/* Header */}
           <div className="bg-[#1e3a5f] text-white px-4 py-3 flex items-center gap-3 flex-shrink-0">
             <img src={UBAG_ICON} alt="Ubag" className="w-8 h-8 rounded-full object-cover" />
@@ -141,7 +154,7 @@ export default function UbagWidget() {
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 px-3 py-2 rounded-lg text-sm text-gray-600 italic">
-                  Teka brod, isipin ko muna...
+                  {loadingPhrase}
                 </div>
               </div>
             )}

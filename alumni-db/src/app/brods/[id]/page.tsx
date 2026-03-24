@@ -129,9 +129,9 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{member.last_name}, {member.first_name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{member.last_name}, {member.first_name}</h1>
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               member.status === "alive" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
@@ -160,7 +160,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         {editing ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 ["last_name", "Last Name"],
                 ["first_name", "First Name"],
@@ -227,7 +227,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Info label="Last Name" value={member.last_name} />
             <Info label="First Name" value={member.first_name} />
             <Info label="Chapter" value={member.chapter} />
@@ -242,7 +242,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Annual Dues */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Annual Dues</h2>
           <button
@@ -254,7 +254,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {showDuesForm && (
-          <form onSubmit={handleAddDues} className="bg-gray-50 rounded-md p-4 mb-4 grid grid-cols-3 gap-3">
+          <form onSubmit={handleAddDues} className="bg-gray-50 rounded-md p-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Fiscal Year *</label>
               <input
@@ -304,7 +304,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           </form>
         )}
 
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-left">
           <thead>
             <tr>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Fiscal Year</th>
@@ -394,7 +394,7 @@ export default function BrodDetailPage({ params }: { params: Promise<{ id: strin
           </form>
         )}
 
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-left">
           <thead>
             <tr>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>

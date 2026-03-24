@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Prevent text size adjustment on orientation change (iOS) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 640px) {
+  button, a, select, input, textarea {
+    min-height: 44px;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Better table scrolling on mobile */
+  table {
+    white-space: nowrap;
+  }
+}
+
+/* Smooth scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}

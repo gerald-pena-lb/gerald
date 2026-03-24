@@ -64,7 +64,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
         <button
           onClick={() => { setShowForm(!showForm); setError(""); }}
@@ -75,7 +75,7 @@ export default function UsersPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-white rounded-lg shadow p-4 mb-6 grid grid-cols-2 gap-3">
+        <form onSubmit={handleAdd} className="bg-white rounded-lg shadow p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {error && (
             <div className="col-span-2 p-2 bg-red-50 text-red-700 rounded-md text-sm">{error}</div>
           )}
@@ -128,7 +128,7 @@ export default function UsersPage() {
         </form>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

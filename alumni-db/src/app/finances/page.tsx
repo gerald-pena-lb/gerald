@@ -135,7 +135,7 @@ export default function FinancesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Finances</h1>
         <button
           onClick={handleDownloadPDF}
@@ -145,7 +145,7 @@ export default function FinancesPage() {
         </button>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -161,7 +161,7 @@ export default function FinancesPage() {
 
       {tab === "dues" && (
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <label className="text-sm text-gray-600">Fiscal Year:</label>
               <input
@@ -180,7 +180,7 @@ export default function FinancesPage() {
           </div>
 
           {showDuesForm && (
-            <form onSubmit={handleAddDues} className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-2 gap-3">
+            <form onSubmit={handleAddDues} className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {duesError && (
                 <div className="col-span-2 p-2 bg-red-50 text-red-700 rounded-md text-sm">{duesError}</div>
               )}
@@ -245,7 +245,7 @@ export default function FinancesPage() {
             </form>
           )}
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -317,7 +317,7 @@ export default function FinancesPage() {
           </div>
 
           {showExpForm && (
-            <form onSubmit={handleAddExpenditure} className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-2 gap-3">
+            <form onSubmit={handleAddExpenditure} className="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
                 <input
@@ -373,7 +373,7 @@ export default function FinancesPage() {
             </form>
           )}
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

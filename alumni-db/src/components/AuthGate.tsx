@@ -26,7 +26,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <>
         <Nav />
-        <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
       </>
     );
   }
