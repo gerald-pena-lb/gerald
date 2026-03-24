@@ -108,14 +108,15 @@ function scoreColor(pct: number) {
 
 /* Stage-specific pass thresholds from the QA checklist */
 const STAGE_THRESHOLDS: Record<number, { green: number; amber: number }> = {
-  10: { green: 7, amber: 5 },   // Connect (7/10), Situation (7/10), Book the Call (8/10 → use 7 for amber grouping)
+  10: { green: 7, amber: 5 },   // Connect (7/10), Situation (7/10)
   14: { green: 10, amber: 7 },  // Problem (10/14), Consequence (10/14)
   8:  { green: 6, amber: 4 },   // Open Wallet Test (6/8)
+  32: { green: 24, amber: 18 }, // Book the Call / Closing & Commitment (24/32)
 };
 
 /* Override for Book the Call which has a higher pass threshold */
 function getStageThresholds(maxScore: number, name: string): { green: number; amber: number } {
-  if (name.includes("Book") || name.includes("Stage 6")) return { green: 8, amber: 6 };
+  if (name.includes("Book") || name.includes("Stage 6") || name.includes("Closing")) return { green: 24, amber: 18 };
   return STAGE_THRESHOLDS[maxScore] || { green: Math.ceil(maxScore * 0.7), amber: Math.ceil(maxScore * 0.5) };
 }
 
@@ -127,8 +128,8 @@ function stageStatus(cat: AnalysisCategory): "green" | "amber" | "red" {
 }
 
 function overallScoreColor(score: number): string {
-  if (score >= 62) return COLORS.green;
-  if (score >= 54) return COLORS.yellow;
+  if (score >= 80) return COLORS.green;
+  if (score >= 70) return COLORS.yellow;
   return COLORS.red;
 }
 

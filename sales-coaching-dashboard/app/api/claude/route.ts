@@ -42,12 +42,23 @@ Analyze the sales call transcript using the 6-stage NEPQ framework below. Use th
 - Handled "I can't afford it" with Mastermind bridge
 - Handled "need to talk to spouse" by offering to include them
 
-## STAGE 6 — BOOK THE CALL (Max 10 pts, Pass: 8)
-- Framed strategy call as prospect's next step toward their goal — not a sales call
-- Committed prospect to reading the case study book before the call
-- Asked prospect to send Alinka pre-call materials
-- Handled "I need to think about it" by pointing back to Stage 4 consequence
-- Confirmed specific date and time — did not leave without booking or clear next action
+## STAGE 6 — BOOK THE CALL / CLOSING & COMMITMENT (Max 32 pts, Pass: 24)
+- Did the setter do the open wallet test?
+- Did the setter tie the call back to the prospect's stated goals?
+- Did the setter connect the booking to the consequences/pain points mentioned earlier?
+- Did the setter confidently move to book the call (without hesitation)?
+- Did the setter clearly explain what will happen on the next call?
+- Did the setter secure a confirmed date and time?
+- Did the setter get a clear verbal commitment to attend?
+- Did the setter introduce "Your Book or Your Excuse" (the book)?
+- Did the setter get commitment from prospect to read the book?
+- Did the setter explain the value of the book?
+- Did the setter get a clear yes to reading it before the call?
+- Did the setter properly position Alinka?
+- Did the setter build anticipation and credibility for the call?
+- Did the setter ask prospect to send pre-call materials?
+- Did the setter explain what kind of materials to send?
+- Did the setter get a clear commitment to send materials?
 
 ## SCORING — FOLLOW THIS EXACTLY. DO NOT DEVIATE.
 
@@ -61,13 +72,13 @@ Step 2: Add up the individual criteria scores for each stage. This sum IS the st
 CRITICAL RULES:
 - Stage 1 has 5 criteria → max 10. Stage 2 has 5 criteria → max 10.
 - Stage 3 has 7 criteria → max 14. Stage 4 has 7 criteria → max 14.
-- Stage 5 has 4 criteria → max 8. Stage 6 has 5 criteria → max 10.
+- Stage 5 has 4 criteria → max 8. Stage 6 has 16 criteria → max 32.
 - If a criteria is NOT applicable (e.g. no objection occurred so "handled objection" can't be scored), score it 1 (benefit of the doubt), NOT 0.
 - If the transcript is short or missing a stage entirely, score all criteria for that stage as 0.
 - The overall score MUST equal the sum of all 6 stage scores. Double-check your arithmetic.
 
-Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥8.
-Total max: 66. Bookable Quality: ≥62. Needs Improvement: 54-61. Mandatory Coaching: below 54.
+Stage pass thresholds: Connect ≥7, Situation ≥7, Problem ≥10, Consequence ≥10, Open Wallet ≥6, Book the Call ≥24.
+Total max: 88. Bookable Quality: ≥80. Needs Improvement: 70-79. Mandatory Coaching: below 70.
 
 ## AUTOMATIC COACHING FLAGS (regardless of score):
 - Stage 1: Ownership reframe missing
@@ -76,6 +87,9 @@ Total max: 66. Bookable Quality: ≥62. Needs Improvement: 54-61. Mandatory Coac
 - Stage 4: Emotional tie-down skipped
 - Stage 5: Pricing disclosed on setter call
 - Stage 6: Call ended with no booking and no next action
+- Stage 6: Book not introduced or no commitment to read it
+- Stage 6: No pre-call materials requested or commitment secured
+- Stage 6: Alinka not properly positioned
 
 ## OUTPUT REQUIREMENTS
 Use this checklist as your guide for robust analysis. You MUST output:
@@ -101,9 +115,9 @@ const ANALYSIS_TOOL = {
     type: "object" as const,
     required: ["overallScore", "maxScore", "summary", "categories", "coachingFlags", "coaching"],
     properties: {
-      overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 66)" },
-      maxScore: { type: "number" as const, description: "Always 66" },
-      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (62-66), Needs Improvement (54-61), or Mandatory Coaching (below 54)." },
+      overallScore: { type: "number" as const, description: "Total score across all 6 stages (max 88)" },
+      maxScore: { type: "number" as const, description: "Always 88" },
+      summary: { type: "string" as const, description: "1-2 sentence overall assessment. Include rating: Bookable Quality (80-88), Needs Improvement (70-79), or Mandatory Coaching (below 70)." },
       categories: {
         type: "array" as const,
         description: "Exactly 6 stage scores in order: Connect, Situation, Problem, Consequence, Open Wallet Test, Book the Call. Each stage includes detailed feedback.",
@@ -113,7 +127,7 @@ const ANALYSIS_TOOL = {
           properties: {
             name: { type: "string" as const, description: "Stage name, e.g. 'Stage 1 — Connect'" },
             score: { type: "number" as const, description: "Stage score" },
-            maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 10" },
+            maxScore: { type: "number" as const, description: "Max for this stage: 10, 10, 14, 14, 8, or 32" },
             assessment: { type: "string" as const, description: "Brief assessment under 12 words" },
             transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For stages below pass threshold: what the agent said/didn't say. For passing stages: what the agent said that was effective." },
             transcriptContext: { type: "string" as const, description: "2-4 lines of surrounding transcript context with speaker labels" },

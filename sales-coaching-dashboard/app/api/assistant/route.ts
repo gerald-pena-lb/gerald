@@ -12,9 +12,9 @@ You have access to the full dataset of agents, their calls, scores, and analysis
 - Booking and close rates
 
 Scoring reference:
-- Total max: 66 points across 6 stages
-- Bookable Quality: 62-66, Needs Improvement: 54-61, Mandatory Coaching: below 54
-- Stage pass thresholds: Connect ≥7/10, Situation ≥7/10, Problem ≥10/14, Consequence ≥10/14, Open Wallet ≥6/8, Book the Call ≥8/10
+- Total max: 88 points across 6 stages
+- Bookable Quality: 80-88, Needs Improvement: 70-79, Mandatory Coaching: below 70
+- Stage pass thresholds: Connect ≥7/10, Situation ≥7/10, Problem ≥10/14, Consequence ≥10/14, Open Wallet ≥6/8, Book the Call / Closing & Commitment ≥24/32
 
 Be concise, data-driven, and actionable. Use specific numbers from the data when answering. If you don't have enough data to answer, say so clearly.`;
 
