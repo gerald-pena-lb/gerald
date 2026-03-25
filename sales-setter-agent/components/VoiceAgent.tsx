@@ -93,16 +93,16 @@ export default function VoiceAgent({
 
       const sessionData = await sessionRes.json();
 
-      if (!sessionData.signedUrl) {
-        throw new Error("No session credentials received");
+      if (!sessionData.conversationToken) {
+        throw new Error("No conversation token received");
       }
 
       // 2. Request microphone permission early
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // 3. Start ElevenLabs conversation
+      // 3. Start ElevenLabs conversation via WebRTC (required for audio)
       const conversation = await Conversation.startSession({
-        signedUrl: sessionData.signedUrl,
+        conversationToken: sessionData.conversationToken,
         connectionType: "webrtc",
 
         // Inject prospect/teammate names via dynamic variables
