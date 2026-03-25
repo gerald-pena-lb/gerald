@@ -123,10 +123,15 @@ export default function VoiceAgent({
 
         // Callbacks
         onConnect: () => {
+          console.log("ElevenLabs: connected");
           setCallState(CALL_STATES.CONNECTED);
         },
 
-        onDisconnect: () => {
+        onDisconnect: (details: { reason: string; message?: string; context?: unknown }) => {
+          console.error("ElevenLabs disconnected:", JSON.stringify(details));
+          if (details.reason === "error") {
+            setError(`Call disconnected: ${details.message || "Unknown error"}`);
+          }
           setCallState(CALL_STATES.ENDED);
           setIsAgentSpeaking(false);
         },
@@ -143,10 +148,13 @@ export default function VoiceAgent({
           setIsAgentSpeaking(mode.mode === "speaking");
         },
 
-        onError: (err: unknown) => {
-          console.error("ElevenLabs conversation error:", err);
-          const message = err instanceof Error ? err.message : "Voice connection error";
+        onError: (message: string, context?: unknown) => {
+          console.error("ElevenLabs error:", message, context);
           setError(message);
+        },
+
+        onStatusChange: (status: { status?: string }) => {
+          console.log("ElevenLabs status:", status.status);
         },
       });
 
