@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const data = await tokenRes.json();
 
     return NextResponse.json({
-      conversationToken: data.token,
+      agentId,
       prospectName,
       teammateName,
     });
