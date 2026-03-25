@@ -154,23 +154,22 @@ function filterCalls(calls: Call[], weekFilter: string): Call[] {
 }
 
 function scoreColor(pct: number) {
-  if (pct >= 0.7) return COLORS.green;
-  if (pct >= 0.4) return COLORS.yellow;
+  if (pct >= 0.9) return COLORS.green;
+  if (pct > 0.75) return COLORS.yellow;
   return COLORS.red;
 }
 
-/* Stage-specific pass thresholds from the QA checklist */
+/* Stage-specific pass thresholds — 90% = green, 75% = amber cutoff */
 const STAGE_THRESHOLDS: Record<number, { green: number; amber: number }> = {
-  10: { green: 7, amber: 5 },   // Connect (7/10), Situation (7/10)
-  14: { green: 10, amber: 7 },  // Problem (10/14), Consequence (10/14)
-  8:  { green: 6, amber: 4 },   // Open Wallet Test (6/8)
-  37: { green: 27, amber: 20 }, // Book the Call / Closing & Commitment (27/37)
+  10: { green: 9, amber: 8 },   // Connect (9/10), Situation (9/10)
+  14: { green: 13, amber: 11 }, // Problem (13/14), Consequence (13/14)
+  8:  { green: 7, amber: 6 },   // Open Wallet Test (7/8)
+  37: { green: 34, amber: 28 }, // Book the Call / Closing & Commitment (34/37)
 };
 
-/* Override for Book the Call which has a higher pass threshold */
 function getStageThresholds(maxScore: number, name: string): { green: number; amber: number } {
-  if (name.includes("Book") || name.includes("Stage 6") || name.includes("Closing")) return { green: 27, amber: 20 };
-  return STAGE_THRESHOLDS[maxScore] || { green: Math.ceil(maxScore * 0.7), amber: Math.ceil(maxScore * 0.5) };
+  if (name.includes("Book") || name.includes("Stage 6") || name.includes("Closing")) return { green: 34, amber: 28 };
+  return STAGE_THRESHOLDS[maxScore] || { green: Math.ceil(maxScore * 0.9), amber: Math.ceil(maxScore * 0.75) };
 }
 
 function stageStatus(cat: AnalysisCategory): "green" | "amber" | "red" {
@@ -182,7 +181,7 @@ function stageStatus(cat: AnalysisCategory): "green" | "amber" | "red" {
 
 function overallScoreColor(pct: number): string {
   if (pct >= 0.9) return COLORS.green;
-  if (pct >= 0.8) return COLORS.yellow;
+  if (pct > 0.75) return COLORS.yellow;
   return COLORS.red;
 }
 
