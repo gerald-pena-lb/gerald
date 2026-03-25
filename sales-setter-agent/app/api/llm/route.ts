@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
 
+// Use Edge Runtime for native streaming and no cold starts
+export const runtime = "edge";
+
 // Store the last request for debugging via GET /api/llm
 let lastRequest: unknown = null;
 let lastError: string | null = null;
