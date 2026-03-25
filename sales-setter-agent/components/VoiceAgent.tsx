@@ -104,14 +104,10 @@ export default function VoiceAgent({
       const conversation = await Conversation.startSession({
         signedUrl: sessionData.signedUrl,
 
-        // Dynamic overrides — inject prospect/teammate names into the prompt
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: `The prospect's name is ${prospectName}. The LinkedIn teammate who referred them is ${teammateName}. Use these names naturally throughout the conversation.`,
-            },
-            firstMessage: `Hey ${prospectName}, welcome to the call. What was it about your conversation with ${teammateName} on LinkedIn that caused you to want to book in some time with me today?`,
-          },
+        // Inject prospect/teammate names via dynamic variables
+        dynamicVariables: {
+          prospect_name: prospectName,
+          teammate_name: teammateName,
         },
 
         // Client-side tools (Calendly booking)
