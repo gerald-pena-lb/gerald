@@ -22,14 +22,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { agentId } = body; // If provided, update existing agent
 
-    // The public URL where ElevenLabs can reach our LLM proxy
+    // LLM_WEBHOOK_URL is optional — if not set, uses ElevenLabs' built-in Claude Sonnet 4.6
+
+    // Use built-in Claude model if LLM_WEBHOOK_URL is not set, otherwise use custom LLM proxy
     const llmWebhookUrl = process.env.LLM_WEBHOOK_URL;
-    if (!llmWebhookUrl) {
-      return NextResponse.json(
-        { error: "LLM_WEBHOOK_URL not configured. This must be a publicly accessible URL pointing to /api/llm" },
-        { status: 500 }
-      );
-    }
+    const useCustomLlm = !!llmWebhookUrl;
+
+    const llmConfig = useCustomLlm
+      ? {
+          llm: "custom-llm",
+          custom_llm: {
+            url: llmWebhookUrl,
+            model_id: "claude-opus-4-6",
+            api_type: "chat_completions",
+          },
+        }
+      : {
+          llm: "claude-sonnet-4-6",
+        };
 
     const agentConfig = {
       name: "Gerald — NEPQ Sales Setter",
@@ -37,12 +47,7 @@ export async function POST(req: NextRequest) {
         agent: {
           prompt: {
             prompt: NEPQ_SYSTEM_PROMPT,
-            llm: "custom-llm",
-            custom_llm: {
-              url: llmWebhookUrl,
-              model_id: "claude-opus-4-6",
-              api_type: "chat_completions",
-            },
+            ...llmConfig,
             temperature: 0.7,
             max_tokens: 300,
           },
