@@ -1,5 +1,19 @@
 import { NextRequest } from "next/server";
 
+// Store the last request for debugging via GET /api/llm
+let lastRequest: unknown = null;
+let lastError: string | null = null;
+
+/**
+ * GET /api/llm — Debug: see the last request ElevenLabs sent
+ */
+export async function GET() {
+  return new Response(
+    JSON.stringify({ lastRequest, lastError }, null, 2),
+    { headers: { "Content-Type": "application/json" } }
+  );
+}
+
 /**
  * POST /api/llm
  *
@@ -11,23 +25,62 @@ import { NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    lastError = "ANTHROPIC_API_KEY not configured";
     return new Response(
-      JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }),
+      JSON.stringify({ error: lastError }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 
   try {
     const body = await req.json();
-    const { messages, temperature, max_tokens } = body;
+    lastRequest = body;
+    lastError = null;
+
+    const messages = body.messages || [];
+    const temperature = body.temperature;
+    const max_tokens = body.max_tokens;
 
     // Separate system message from conversation messages
-    const systemMessage = messages?.find(
+    const systemMessage = messages.find(
       (m: { role: string }) => m.role === "system"
     );
-    const conversationMessages = (messages || []).filter(
+    let conversationMessages = messages.filter(
       (m: { role: string }) => m.role !== "system"
     );
+
+    // Anthropic requires at least one user message.
+    // If ElevenLabs sends no user messages (e.g. for first_message generation),
+    // add a placeholder so Claude can respond.
+    if (conversationMessages.length === 0) {
+      conversationMessages = [
+        { role: "user", content: "Begin the conversation with your opening line." },
+      ];
+    }
+
+    // Ensure messages alternate correctly for Anthropic
+    // (must start with user, alternate user/assistant)
+    const cleanedMessages: { role: string; content: string }[] = [];
+    for (const m of conversationMessages) {
+      const lastRole = cleanedMessages.length > 0
+        ? cleanedMessages[cleanedMessages.length - 1].role
+        : null;
+
+      // Skip consecutive same-role messages by merging them
+      if (lastRole === m.role) {
+        cleanedMessages[cleanedMessages.length - 1].content += "\n" + m.content;
+      } else {
+        cleanedMessages.push({ role: m.role, content: m.content });
+      }
+    }
+
+    // Ensure first message is from user
+    if (cleanedMessages.length > 0 && cleanedMessages[0].role !== "user") {
+      cleanedMessages.unshift({
+        role: "user",
+        content: "Begin the conversation.",
+      });
+    }
 
     // Call Claude Opus 4.6 with streaming
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -42,23 +95,35 @@ export async function POST(req: NextRequest) {
         max_tokens: max_tokens || 300,
         temperature: temperature ?? 0.7,
         system: systemMessage?.content || "",
-        messages: conversationMessages.map(
-          (m: { role: string; content: string }) => ({
-            role: m.role,
-            content: m.content,
-          })
-        ),
+        messages: cleanedMessages,
         stream: true,
       }),
     });
 
     if (!anthropicRes.ok) {
       const errorText = await anthropicRes.text();
-      console.error("Anthropic API error:", errorText);
-      return new Response(
-        JSON.stringify({ error: "LLM request failed" }),
-        { status: anthropicRes.status, headers: { "Content-Type": "application/json" } }
-      );
+      lastError = `Anthropic ${anthropicRes.status}: ${errorText}`;
+      console.error("Anthropic API error:", lastError);
+
+      // Return error in SSE format so ElevenLabs can handle it
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          const chunk = JSON.stringify({
+            choices: [{ delta: { content: "I apologize, I'm having a technical issue. Could you give me a moment?" }, index: 0 }],
+          });
+          controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+      return new Response(errorStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
     }
 
     // Stream-translate Anthropic SSE → OpenAI SSE format
@@ -77,7 +142,6 @@ export async function POST(req: NextRequest) {
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
-            // Keep the last potentially incomplete line in the buffer
             buffer = lines.pop() || "";
 
             for (const line of lines) {
@@ -89,7 +153,6 @@ export async function POST(req: NextRequest) {
                 const event = JSON.parse(dataStr);
 
                 if (event.type === "content_block_delta" && event.delta?.text) {
-                  // Translate to OpenAI format
                   const openAiChunk = JSON.stringify({
                     choices: [
                       {
@@ -112,10 +175,10 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Ensure we always send [DONE]
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (err) {
+          lastError = `Stream error: ${err}`;
           console.error("Stream translation error:", err);
           controller.error(err);
         }
@@ -130,6 +193,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
+    lastError = `Proxy error: ${error}`;
     console.error("LLM proxy error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
