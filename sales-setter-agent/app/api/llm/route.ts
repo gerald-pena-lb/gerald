@@ -129,6 +129,8 @@ export async function POST(req: NextRequest) {
     // Stream-translate Anthropic SSE → OpenAI SSE format
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
+    const responseId = `chatcmpl-${Date.now()}`;
+    let chunkIndex = 0;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -136,6 +138,22 @@ export async function POST(req: NextRequest) {
         let buffer = "";
 
         try {
+          // Send initial role chunk (OpenAI format requires this first)
+          const roleChunk = JSON.stringify({
+            id: responseId,
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: "claude-opus-4-6",
+            choices: [
+              {
+                index: 0,
+                delta: { role: "assistant", content: "" },
+                finish_reason: null,
+              },
+            ],
+          });
+          controller.enqueue(encoder.encode(`data: ${roleChunk}\n\n`));
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -153,11 +171,17 @@ export async function POST(req: NextRequest) {
                 const event = JSON.parse(dataStr);
 
                 if (event.type === "content_block_delta" && event.delta?.text) {
+                  chunkIndex++;
                   const openAiChunk = JSON.stringify({
+                    id: responseId,
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: "claude-opus-4-6",
                     choices: [
                       {
-                        delta: { content: event.delta.text },
                         index: 0,
+                        delta: { content: event.delta.text },
+                        finish_reason: null,
                       },
                     ],
                   });
@@ -167,6 +191,21 @@ export async function POST(req: NextRequest) {
                 }
 
                 if (event.type === "message_stop") {
+                  // Send final chunk with finish_reason
+                  const stopChunk = JSON.stringify({
+                    id: responseId,
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: "claude-opus-4-6",
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {},
+                        finish_reason: "stop",
+                      },
+                    ],
+                  });
+                  controller.enqueue(encoder.encode(`data: ${stopChunk}\n\n`));
                   controller.enqueue(encoder.encode("data: [DONE]\n\n"));
                 }
               } catch {
