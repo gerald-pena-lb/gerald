@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSystemPrompt, VOICE_CONFIG } from "@/lib/nepq-prompt";
 
 /**
  * POST /api/session
  *
- * Creates an ephemeral OpenAI Realtime API session token.
- * The client uses this token to establish a WebRTC connection directly
- * with OpenAI's Realtime servers — no audio is routed through our backend.
+ * Creates a signed conversation URL for ElevenLabs Conversational AI.
+ * The client uses this to establish a WebSocket connection with ElevenLabs.
  */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+  const agentId = process.env.ELEVENLABS_AGENT_ID;
+
+  if (!elevenLabsKey || !agentId) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY not configured" },
+      { error: "ELEVENLABS_API_KEY and ELEVENLABS_AGENT_ID are required" },
       { status: 500 }
     );
   }
@@ -28,75 +28,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const instructions = buildSystemPrompt({ prospectName, teammateName });
-
-    // Create an ephemeral session with OpenAI Realtime API
+    // Get a signed URL for the private agent
     const response = await fetch(
-      "https://api.openai.com/v1/realtime/sessions",
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_REALTIME_MODEL || "gpt-4o-realtime-preview",
-          voice: VOICE_CONFIG.voice,
-          instructions,
-          tools: [
-            {
-              type: "function",
-              name: "book_strategy_call",
-              description:
-                "Book a strategy call with Alinka on Calendly. Call this when the prospect agrees to schedule a strategy call. You must collect their email first. Call once without preferred_time to get available slots, then call again with their chosen time to confirm.",
-              parameters: {
-                type: "object",
-                properties: {
-                  prospect_email: {
-                    type: "string",
-                    description: "The prospect's email address for the calendar invite",
-                  },
-                  prospect_name: {
-                    type: "string",
-                    description: "The prospect's full name",
-                  },
-                  notes: {
-                    type: "string",
-                    description:
-                      "Summary notes for Alinka including: prospect's goal, main problem/pain point, emotional consequence of inaction, budget range, and any materials they agreed to send",
-                  },
-                  preferred_time: {
-                    type: "string",
-                    description:
-                      "ISO 8601 UTC start time for the meeting. Omit on first call to get available times. Include on second call to confirm booking.",
-                  },
-                },
-                required: ["prospect_email", "prospect_name", "notes"],
-              },
-            },
-          ],
-          tool_choice: "auto",
-          temperature: VOICE_CONFIG.temperature,
-          max_response_output_tokens: VOICE_CONFIG.max_response_output_tokens,
-          turn_detection: VOICE_CONFIG.turn_detection,
-          input_audio_transcription: {
-            model: "whisper-1",
-          },
-        }),
+        headers: { "xi-api-key": elevenLabsKey },
       }
     );
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error("OpenAI session creation failed:", error);
+      const errorText = await response.text();
+      console.error("ElevenLabs signed URL error:", errorText);
       return NextResponse.json(
-        { error: "Failed to create voice session" },
+        { error: "Failed to create conversation session" },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+
+    return NextResponse.json({
+      signedUrl: data.signed_url,
+      prospectName,
+      teammateName,
+    });
   } catch (error) {
     console.error("Session creation error:", error);
     return NextResponse.json(

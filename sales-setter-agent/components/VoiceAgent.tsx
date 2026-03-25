@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Conversation } from "@elevenlabs/client";
 import { CALL_STATES, type CallState } from "@/lib/constants";
 
 interface VoiceAgentProps {
@@ -24,9 +25,7 @@ export default function VoiceAgent({
   const [error, setError] = useState<string | null>(null);
   const [schedulingUrl, setSchedulingUrl] = useState<string | null>(null);
 
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const dcRef = useRef<RTCDataChannel | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const conversationRef = useRef<Conversation | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-scroll transcript
@@ -36,81 +35,38 @@ export default function VoiceAgent({
 
   const addTranscriptEntry = useCallback(
     (role: "agent" | "prospect", text: string) => {
-      setTranscript((prev) => {
-        // Merge consecutive entries from the same role
-        if (prev.length > 0 && prev[prev.length - 1].role === role) {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            text: updated[updated.length - 1].text + " " + text,
-          };
-          return updated;
-        }
-        return [...prev, { role, text, timestamp: Date.now() }];
-      });
+      setTranscript((prev) => [...prev, { role, text, timestamp: Date.now() }]);
     },
     []
   );
 
   const handleToolCall = useCallback(
-    async (toolName: string, args: string, callId: string) => {
-      if (toolName === "book_strategy_call") {
-        try {
-          const parsedArgs = JSON.parse(args);
-          const response = await fetch("/api/calendly", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(parsedArgs),
-          });
-          const result = await response.json();
+    async (params: Record<string, unknown>): Promise<string> => {
+      try {
+        const response = await fetch("/api/calendly", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        });
+        const result = await response.json();
 
-          if (result.scheduling_url) {
-            setSchedulingUrl(result.scheduling_url);
-          }
-
-          // Send tool result back to the agent via data channel
-          if (dcRef.current?.readyState === "open") {
-            dcRef.current.send(
-              JSON.stringify({
-                type: "conversation.item.create",
-                item: {
-                  type: "function_call_output",
-                  call_id: callId,
-                  output: JSON.stringify({
-                    success: true,
-                    message: result.message,
-                    scheduling_url: result.scheduling_url,
-                  }),
-                },
-              })
-            );
-            // Trigger agent to respond after tool result
-            dcRef.current.send(
-              JSON.stringify({ type: "response.create" })
-            );
-          }
-        } catch (err) {
-          console.error("Tool call error:", err);
-          if (dcRef.current?.readyState === "open") {
-            dcRef.current.send(
-              JSON.stringify({
-                type: "conversation.item.create",
-                item: {
-                  type: "function_call_output",
-                  call_id: callId,
-                  output: JSON.stringify({
-                    success: false,
-                    message:
-                      "There was an issue with the booking system. Please ask the prospect for their email and let them know we will send the scheduling link shortly.",
-                  }),
-                },
-              })
-            );
-            dcRef.current.send(
-              JSON.stringify({ type: "response.create" })
-            );
-          }
+        if (result.scheduling_url) {
+          setSchedulingUrl(result.scheduling_url);
         }
+
+        return JSON.stringify({
+          success: true,
+          message: result.message,
+          scheduling_url: result.scheduling_url,
+          available_slots: result.available_slots,
+        });
+      } catch (err) {
+        console.error("Tool call error:", err);
+        return JSON.stringify({
+          success: false,
+          message:
+            "There was an issue with the booking system. Please ask the prospect for their email and let them know we will send the scheduling link shortly.",
+        });
       }
     },
     []
@@ -123,7 +79,7 @@ export default function VoiceAgent({
     setSchedulingUrl(null);
 
     try {
-      // 1. Get ephemeral session token from our backend
+      // 1. Get signed URL from our backend
       const sessionRes = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,134 +92,65 @@ export default function VoiceAgent({
       }
 
       const sessionData = await sessionRes.json();
-      const ephemeralKey = sessionData.client_secret?.value;
-      const model = sessionData.model || "gpt-4o-realtime-preview";
 
-      if (!ephemeralKey) {
-        throw new Error("No ephemeral key received from session endpoint");
+      if (!sessionData.signedUrl) {
+        throw new Error("No signed URL received from session endpoint");
       }
 
-      // 2. Set up WebRTC peer connection
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
+      // 2. Request microphone permission early
+      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Set up remote audio playback
-      const audioEl = document.createElement("audio");
-      audioEl.autoplay = true;
-      audioRef.current = audioEl;
+      // 3. Start ElevenLabs conversation
+      const conversation = await Conversation.startSession({
+        signedUrl: sessionData.signedUrl,
 
-      pc.ontrack = (event) => {
-        audioEl.srcObject = event.streams[0];
-      };
-
-      // Get user microphone
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      // 3. Set up data channel for events
-      const dc = pc.createDataChannel("oai-events");
-      dcRef.current = dc;
-
-      // Track function call accumulation
-      const pendingToolCalls: Record<
-        string,
-        { name: string; args: string; callId: string }
-      > = {};
-
-      dc.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-
-          switch (msg.type) {
-            case "response.audio_transcript.delta":
-              if (msg.delta) {
-                addTranscriptEntry("agent", msg.delta);
-              }
-              break;
-
-            case "conversation.item.input_audio_transcription.completed":
-              if (msg.transcript) {
-                addTranscriptEntry("prospect", msg.transcript);
-              }
-              break;
-
-            case "response.audio.started":
-              setIsAgentSpeaking(true);
-              break;
-
-            case "response.audio.done":
-            case "response.done":
-              setIsAgentSpeaking(false);
-              break;
-
-            case "response.function_call_arguments.delta":
-              if (msg.call_id) {
-                if (!pendingToolCalls[msg.call_id]) {
-                  pendingToolCalls[msg.call_id] = {
-                    name: msg.name || "",
-                    args: "",
-                    callId: msg.call_id,
-                  };
-                }
-                if (msg.name) {
-                  pendingToolCalls[msg.call_id].name = msg.name;
-                }
-                if (msg.delta) {
-                  pendingToolCalls[msg.call_id].args += msg.delta;
-                }
-              }
-              break;
-
-            case "response.function_call_arguments.done":
-              if (msg.call_id && pendingToolCalls[msg.call_id]) {
-                const tool = pendingToolCalls[msg.call_id];
-                handleToolCall(tool.name, tool.args, tool.callId);
-                delete pendingToolCalls[msg.call_id];
-              }
-              break;
-
-            case "error":
-              console.error("Realtime API error:", msg.error);
-              if (msg.error?.message) {
-                setError(msg.error.message);
-              }
-              break;
-          }
-        } catch (err) {
-          console.error("Failed to parse data channel message:", err);
-        }
-      };
-
-      dc.onopen = () => {
-        setCallState(CALL_STATES.CONNECTED);
-        // Trigger the initial greeting
-        dc.send(JSON.stringify({ type: "response.create" }));
-      };
-
-      // 4. Create and set local SDP offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // 5. Send offer to OpenAI Realtime API
-      const sdpResponse = await fetch(
-        `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${ephemeralKey}`,
-            "Content-Type": "application/sdp",
+        // Dynamic overrides — inject prospect/teammate names into the prompt
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: `The prospect's name is ${prospectName}. The LinkedIn teammate who referred them is ${teammateName}. Use these names naturally throughout the conversation.`,
+            },
+            firstMessage: `Hey ${prospectName}, welcome to the call. What was it about your conversation with ${teammateName} on LinkedIn that caused you to want to book in some time with me today?`,
           },
-          body: offer.sdp,
-        }
-      );
+        },
 
-      if (!sdpResponse.ok) {
-        throw new Error("Failed to establish WebRTC connection with OpenAI");
-      }
+        // Client-side tools (Calendly booking)
+        clientTools: {
+          book_strategy_call: async (parameters: Record<string, unknown>) => {
+            return await handleToolCall(parameters);
+          },
+        },
 
-      // 6. Set remote SDP answer
-      const answerSdp = await sdpResponse.text();
-      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+        // Callbacks
+        onConnect: () => {
+          setCallState(CALL_STATES.CONNECTED);
+        },
+
+        onDisconnect: () => {
+          setCallState(CALL_STATES.ENDED);
+          setIsAgentSpeaking(false);
+        },
+
+        onMessage: (message: { source?: string; message?: string }) => {
+          if (message.source === "ai" && message.message) {
+            addTranscriptEntry("agent", message.message);
+          } else if (message.source === "user" && message.message) {
+            addTranscriptEntry("prospect", message.message);
+          }
+        },
+
+        onModeChange: (mode: { mode?: string }) => {
+          setIsAgentSpeaking(mode.mode === "speaking");
+        },
+
+        onError: (err: unknown) => {
+          console.error("ElevenLabs conversation error:", err);
+          const message = err instanceof Error ? err.message : "Voice connection error";
+          setError(message);
+        },
+      });
+
+      conversationRef.current = conversation;
     } catch (err) {
       console.error("Call start error:", err);
       setError(err instanceof Error ? err.message : "Failed to start call");
@@ -271,28 +158,11 @@ export default function VoiceAgent({
     }
   }, [prospectName, teammateName, addTranscriptEntry, handleToolCall]);
 
-  const endCall = useCallback(() => {
-    // Close data channel
-    if (dcRef.current) {
-      dcRef.current.close();
-      dcRef.current = null;
+  const endCall = useCallback(async () => {
+    if (conversationRef.current) {
+      await conversationRef.current.endSession();
+      conversationRef.current = null;
     }
-
-    // Close peer connection and stop all tracks
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((sender) => {
-        if (sender.track) sender.track.stop();
-      });
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-
-    // Stop audio playback
-    if (audioRef.current) {
-      audioRef.current.srcObject = null;
-      audioRef.current = null;
-    }
-
     setCallState(CALL_STATES.ENDED);
     setIsAgentSpeaking(false);
   }, []);
@@ -347,10 +217,7 @@ export default function VoiceAgent({
       {error && (
         <div style={styles.errorBanner}>
           <span>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            style={styles.errorDismiss}
-          >
+          <button onClick={() => setError(null)} style={styles.errorDismiss}>
             Dismiss
           </button>
         </div>

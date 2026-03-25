@@ -1,0 +1,108 @@
+import { NextRequest, NextResponse } from "next/server";
+import { NEPQ_SYSTEM_PROMPT, AGENT_FIRST_MESSAGE, ELEVENLABS_VOICE_CONFIG } from "@/lib/nepq-prompt";
+
+/**
+ * POST /api/agent
+ *
+ * Creates (or updates) the ElevenLabs Conversational AI agent
+ * with the NEPQ system prompt and custom LLM (Claude Opus 4.6 proxy).
+ *
+ * Call this once during setup, or when you need to update the agent config.
+ */
+export async function POST(req: NextRequest) {
+  const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
+  if (!elevenLabsKey) {
+    return NextResponse.json(
+      { error: "ELEVENLABS_API_KEY not configured" },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const body = await req.json();
+    const { agentId } = body; // If provided, update existing agent
+
+    // The public URL where ElevenLabs can reach our LLM proxy
+    const llmWebhookUrl = process.env.LLM_WEBHOOK_URL;
+    if (!llmWebhookUrl) {
+      return NextResponse.json(
+        { error: "LLM_WEBHOOK_URL not configured. This must be a publicly accessible URL pointing to /api/llm" },
+        { status: 500 }
+      );
+    }
+
+    const agentConfig = {
+      name: "Gerald — NEPQ Sales Setter",
+      conversation_config: {
+        agent: {
+          prompt: {
+            prompt: NEPQ_SYSTEM_PROMPT,
+            llm: "custom-llm",
+            custom_llm: {
+              url: llmWebhookUrl,
+              model_id: "claude-opus-4-6",
+              api_type: "chat_completions",
+            },
+            temperature: 0.7,
+            max_tokens: 300,
+          },
+          first_message: AGENT_FIRST_MESSAGE,
+          language: "en",
+        },
+        tts: {
+          model_id: ELEVENLABS_VOICE_CONFIG.modelId,
+          voice_id: process.env.ELEVENLABS_VOICE_ID || ELEVENLABS_VOICE_CONFIG.voiceId,
+          stability: ELEVENLABS_VOICE_CONFIG.stability,
+          similarity_boost: ELEVENLABS_VOICE_CONFIG.similarityBoost,
+          speed: ELEVENLABS_VOICE_CONFIG.speed,
+          optimize_streaming_latency: 3,
+        },
+        conversation: {
+          max_duration_seconds: 1800, // 30 min max
+          client_events: [
+            "agent_response",
+            "user_transcript",
+            "agent_response_correction",
+          ],
+        },
+      },
+    };
+
+    const url = agentId
+      ? `https://api.elevenlabs.io/v1/convai/agents/${agentId}`
+      : "https://api.elevenlabs.io/v1/convai/agents/create";
+
+    const method = agentId ? "PATCH" : "POST";
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "xi-api-key": elevenLabsKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(agentConfig),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ElevenLabs agent creation failed:", errorText);
+      return NextResponse.json(
+        { error: "Failed to create/update agent", details: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json({
+      success: true,
+      agentId: data.agent_id,
+      message: agentId ? "Agent updated" : "Agent created",
+    });
+  } catch (error) {
+    console.error("Agent creation error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

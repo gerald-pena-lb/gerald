@@ -35,6 +35,14 @@ export default function CallPage() {
         {/* Info Panel */}
         <div style={styles.infoPanel}>
           <div style={styles.infoItem}>
+            <span style={styles.infoLabel}>LLM</span>
+            <span style={styles.infoValue}>Claude Opus 4.6 (Anthropic)</span>
+          </div>
+          <div style={styles.infoItem}>
+            <span style={styles.infoLabel}>Voice</span>
+            <span style={styles.infoValue}>ElevenLabs Conversational AI</span>
+          </div>
+          <div style={styles.infoItem}>
             <span style={styles.infoLabel}>Framework</span>
             <span style={styles.infoValue}>NEPQ (Neuro-Emotional Persuasion Questioning)</span>
           </div>
