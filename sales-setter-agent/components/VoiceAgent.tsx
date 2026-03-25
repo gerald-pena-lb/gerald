@@ -97,10 +97,7 @@ export default function VoiceAgent({
         throw new Error("No conversation token received");
       }
 
-      // 2. Request microphone permission early
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // 3. Start ElevenLabs conversation via WebRTC (required for audio)
+      // 2. Start ElevenLabs conversation via WebRTC (SDK handles mic + audio)
       const conversation = await Conversation.startSession({
         conversationToken: sessionData.conversationToken,
         connectionType: "webrtc",
