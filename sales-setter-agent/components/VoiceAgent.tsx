@@ -137,6 +137,7 @@ export default function VoiceAgent({
 
       const sessionData = await sessionRes.json();
       const ephemeralKey = sessionData.client_secret?.value;
+      const model = sessionData.model || "gpt-4o-realtime-preview";
 
       if (!ephemeralKey) {
         throw new Error("No ephemeral key received from session endpoint");
@@ -245,7 +246,7 @@ export default function VoiceAgent({
 
       // 5. Send offer to OpenAI Realtime API
       const sdpResponse = await fetch(
-        "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview",
+        `https://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
         {
           method: "POST",
           headers: {

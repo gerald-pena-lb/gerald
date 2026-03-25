@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-realtime-preview",
+          model: process.env.OPENAI_REALTIME_MODEL || "gpt-4o-realtime-preview",
           voice: VOICE_CONFIG.voice,
           instructions,
           tools: [
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
               type: "function",
               name: "book_strategy_call",
               description:
-                "Book a strategy call with Alinka on Calendly. Call this when the prospect agrees to schedule a strategy call. You must collect their email and preferred time window first.",
+                "Book a strategy call with Alinka on Calendly. Call this when the prospect agrees to schedule a strategy call. You must collect their email first. Call once without preferred_time to get available slots, then call again with their chosen time to confirm.",
               parameters: {
                 type: "object",
                 properties: {
@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
                     type: "string",
                     description:
                       "Summary notes for Alinka including: prospect's goal, main problem/pain point, emotional consequence of inaction, budget range, and any materials they agreed to send",
+                  },
+                  preferred_time: {
+                    type: "string",
+                    description:
+                      "ISO 8601 UTC start time for the meeting. Omit on first call to get available times. Include on second call to confirm booking.",
                   },
                 },
                 required: ["prospect_email", "prospect_name", "notes"],

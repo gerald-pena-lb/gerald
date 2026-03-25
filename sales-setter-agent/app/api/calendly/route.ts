@@ -4,14 +4,16 @@ import { NextRequest, NextResponse } from "next/server";
  * POST /api/calendly
  *
  * Handles the book_strategy_call tool invocation from the voice agent.
- * Creates a scheduling link or books directly via Calendly API.
+ * Supports two modes:
+ *   1. Direct booking via Calendly Scheduling API (preferred)
+ *   2. Fallback to pre-filled scheduling link
  */
 export async function POST(req: NextRequest) {
   const calendlyApiKey = process.env.CALENDLY_API_KEY;
   const schedulingUrl = process.env.CALENDLY_SCHEDULING_URL;
+  const eventTypeUri = process.env.CALENDLY_EVENT_TYPE_URI;
 
   if (!calendlyApiKey || !schedulingUrl) {
-    // Fallback: return the public scheduling URL for manual booking
     return NextResponse.json({
       success: true,
       method: "manual",
@@ -23,13 +25,48 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { prospect_email, prospect_name, notes } = body;
+    const { prospect_email, prospect_name, notes, preferred_time } = body;
 
-    // Get available times from Calendly
-    const eventTypeUri = process.env.CALENDLY_EVENT_TYPE_URI;
+    // If a preferred time is provided and we have the event type, book directly
+    if (preferred_time && eventTypeUri) {
+      const bookingRes = await fetch("https://api.calendly.com/invitees", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${calendlyApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_type: eventTypeUri,
+          start_time: preferred_time,
+          invitee: {
+            name: prospect_name,
+            email: prospect_email,
+          },
+          location: { kind: "google_conference" },
+          questions_and_answers: notes
+            ? [
+                {
+                  question: "Notes from qualification call",
+                  answer: notes,
+                },
+              ]
+            : undefined,
+        }),
+      });
 
+      if (bookingRes.ok) {
+        const bookingData = await bookingRes.json();
+        return NextResponse.json({
+          success: true,
+          method: "direct_booking",
+          event: bookingData.resource,
+          message: `Strategy call booked for ${prospect_name}. Calendar invite sent to ${prospect_email}. Alinka will receive the meeting details and your notes.`,
+        });
+      }
+    }
+
+    // Fetch available slots for the next 7 days
     if (eventTypeUri) {
-      // Fetch available slots for the next 7 days
       const now = new Date();
       const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -51,18 +88,14 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          method: "api",
-          scheduling_url: `${schedulingUrl}?name=${encodeURIComponent(
-            prospect_name
-          )}&email=${encodeURIComponent(prospect_email)}`,
+          method: "available_times",
           available_slots: availableSlots.map(
             (slot: { start_time: string; status: string }) => ({
               start_time: slot.start_time,
               status: slot.status,
             })
           ),
-          notes_saved: true,
-          message: `Scheduling link generated for ${prospect_name}. Available times retrieved.`,
+          message: `Here are the available times for a strategy call with Alinka. Please ask ${prospect_name} which time works best, then call this function again with the preferred_time to confirm the booking.`,
         });
       }
     }
@@ -76,7 +109,7 @@ export async function POST(req: NextRequest) {
       success: true,
       method: "link",
       scheduling_url: prefilledUrl,
-      message: `I've generated a personalized booking link for ${prospect_name}. They can select their preferred time directly.`,
+      message: `I'll send ${prospect_name} a personalized booking link to select their preferred time with Alinka directly.`,
       notes,
     });
   } catch (error) {
