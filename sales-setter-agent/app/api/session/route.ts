@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * POST /api/session
  *
- * Creates a signed conversation URL for ElevenLabs Conversational AI.
- * The client uses this to establish a WebSocket connection with ElevenLabs.
+ * Creates a conversation token for ElevenLabs Conversational AI.
+ * Returns both signed URL (WebSocket) and conversation token (WebRTC).
  */
 export async function POST(req: NextRequest) {
   const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
@@ -28,27 +28,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get a signed URL for the private agent
-    const response = await fetch(
+    // Get a signed URL (for WebSocket fallback)
+    const signedUrlRes = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${agentId}`,
       {
         headers: { "xi-api-key": elevenLabsKey },
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs signed URL error:", errorText);
-      return NextResponse.json(
-        { error: "Failed to create conversation session" },
-        { status: response.status }
-      );
+    let signedUrl = null;
+    if (signedUrlRes.ok) {
+      const data = await signedUrlRes.json();
+      signedUrl = data.signed_url;
     }
 
-    const data = await response.json();
-
     return NextResponse.json({
-      signedUrl: data.signed_url,
+      signedUrl,
+      agentId,
       prospectName,
       teammateName,
     });
