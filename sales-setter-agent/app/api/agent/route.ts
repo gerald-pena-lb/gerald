@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         };
 
     const agentConfig = {
-      name: "Gerald — NEPQ Sales Setter",
+      name: "Tiffany — NEPQ Sales Setter",
       conversation_config: {
         agent: {
           prompt: {

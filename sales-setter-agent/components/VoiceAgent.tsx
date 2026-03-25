@@ -93,16 +93,17 @@ export default function VoiceAgent({
 
       const sessionData = await sessionRes.json();
 
-      if (!sessionData.signedUrl && !sessionData.agentId) {
+      if (!sessionData.signedUrl) {
         throw new Error("No session credentials received");
       }
 
       // 2. Request microphone permission early
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // 3. Start ElevenLabs conversation with WebRTC for audio
+      // 3. Start ElevenLabs conversation
       const conversation = await Conversation.startSession({
         signedUrl: sessionData.signedUrl,
+        connectionType: "webrtc",
 
         // Inject prospect/teammate names via dynamic variables
         dynamicVariables: {
@@ -267,7 +268,7 @@ export default function VoiceAgent({
               }}
             >
               <span style={styles.transcriptRole}>
-                {entry.role === "agent" ? "Gerald" : prospectName}
+                {entry.role === "agent" ? "Tiffany" : prospectName}
               </span>
               <p style={styles.transcriptText}>{entry.text}</p>
             </div>
