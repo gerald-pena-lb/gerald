@@ -101,6 +101,7 @@ export default function VoiceAgent({
       const conversation = await Conversation.startSession({
         conversationToken: sessionData.conversationToken,
         connectionType: "webrtc",
+        textOnly: false,
 
         // Inject prospect/teammate names via dynamic variables
         dynamicVariables: {
