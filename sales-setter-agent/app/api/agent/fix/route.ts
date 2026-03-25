@@ -32,6 +32,7 @@ export async function GET() {
               prompt: {
                 prompt: NEPQ_SYSTEM_PROMPT,
                 llm: "claude-sonnet-4-6",
+                custom_llm: null,
                 temperature: 0.7,
                 max_tokens: 300,
               },
