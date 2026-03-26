@@ -1,19 +1,24 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Conversation } from "@elevenlabs/client";
+import React, { useEffect, useRef, useCallback } from "react";
+import { useConversation } from "@elevenlabs/react";
 
-type Status = "idle" | "connecting" | "connected" | "ended";
+const AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "";
 
 export default function HomePage() {
-  const [status, setStatus] = useState<Status>("idle");
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const conversationRef = useRef<Conversation | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameRef = useRef<number>(0);
 
-  const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || "";
+  const conversation = useConversation({
+    onConnect: () => console.log("Connected"),
+    onDisconnect: () => console.log("Disconnected"),
+    onMessage: (message) => console.log("Message:", message),
+    onError: (error) => console.error("Error:", error),
+    onModeChange: (mode) => console.log("Mode:", mode),
+  });
+
+  const isSpeaking = conversation.isSpeaking;
+  const status = conversation.status; // "connected" | "connecting" | "disconnected"
 
   // Draw the glowing circle with static lines
   const drawCircle = useCallback((speaking: boolean) => {
@@ -95,64 +100,26 @@ export default function HomePage() {
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [isSpeaking, drawCircle]);
 
-  const startCall = useCallback(async () => {
-    if (!agentId) {
-      setError("NEXT_PUBLIC_ELEVENLABS_AGENT_ID is not set");
-      return;
-    }
+  const startCall = async () => {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    await conversation.startSession({
+      agentId: AGENT_ID,
+      connectionType: "webrtc",
+    });
+  };
 
-    setStatus("connecting");
-    setError(null);
-
-    try {
-      const conversation = await Conversation.startSession({
-        agentId,
-        connectionType: "webrtc",
-        textOnly: false,
-
-        onConnect: () => {
-          setStatus("connected");
-        },
-        onDisconnect: () => {
-          setStatus("ended");
-          setIsSpeaking(false);
-        },
-        onModeChange: (mode: { mode?: string }) => {
-          setIsSpeaking(mode.mode === "speaking");
-        },
-        onError: (message: string) => {
-          console.error("ElevenLabs error:", message);
-          setError(message);
-        },
-      });
-
-      conversationRef.current = conversation;
-    } catch (err) {
-      console.error("Call start error:", err);
-      setError(err instanceof Error ? err.message : "Failed to start call");
-      setStatus("idle");
-    }
-  }, [agentId]);
-
-  const endCall = useCallback(async () => {
-    if (conversationRef.current) {
-      await conversationRef.current.endSession();
-      conversationRef.current = null;
-    }
-    setStatus("ended");
-    setIsSpeaking(false);
-  }, []);
+  const endCall = async () => {
+    await conversation.endSession();
+  };
 
   const isActive = status === "connected" || status === "connecting";
 
   return (
     <div style={styles.wrapper}>
       <div style={styles.container}>
-        {/* Header */}
         <h1 style={styles.title}>Tiffany</h1>
         <p style={styles.subtitle}>Book Publishing Strategy Call</p>
 
-        {/* Glowing circle */}
         <div style={styles.circleWrapper}>
           <canvas
             ref={canvasRef}
@@ -162,18 +129,12 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Status text */}
         <p style={styles.statusText}>
-          {status === "idle" && "Tap the mic to start"}
+          {status === "disconnected" && "Tap the mic to start"}
           {status === "connecting" && "Connecting..."}
           {status === "connected" && (isSpeaking ? "Tiffany is speaking" : "Listening...")}
-          {status === "ended" && "Call ended"}
         </p>
 
-        {/* Error */}
-        {error && <p style={styles.errorText}>{error}</p>}
-
-        {/* Mic button */}
         <div style={styles.micWrapper}>
           {!isActive && (
             <button onClick={startCall} style={styles.micButton}>
@@ -194,12 +155,6 @@ export default function HomePage() {
             </button>
           )}
         </div>
-
-        {status === "ended" && (
-          <button onClick={() => setStatus("idle")} style={styles.resetLink}>
-            Start new call
-          </button>
-        )}
       </div>
     </div>
   );
@@ -249,12 +204,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     margin: "0 0 16px",
   },
-  errorText: {
-    fontSize: "13px",
-    color: "#ef4444",
-    margin: "0 0 8px",
-    textAlign: "center" as const,
-  },
   micWrapper: {
     display: "flex",
     justifyContent: "center",
@@ -269,7 +218,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "transform 0.15s, box-shadow 0.15s",
     boxShadow: "0 2px 12px rgba(26, 26, 46, 0.2)",
   },
   endButton: {
@@ -283,15 +231,5 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     boxShadow: "0 2px 12px rgba(239, 68, 68, 0.3)",
-  },
-  resetLink: {
-    marginTop: "8px",
-    background: "none",
-    border: "none",
-    color: "#6366f1",
-    fontSize: "14px",
-    fontWeight: 500,
-    cursor: "pointer",
-    textDecoration: "underline",
   },
 };
