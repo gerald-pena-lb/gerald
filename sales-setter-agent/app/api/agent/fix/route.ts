@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { NEPQ_SYSTEM_PROMPT, AGENT_FIRST_MESSAGE, ELEVENLABS_VOICE_CONFIG } from "@/lib/nepq-prompt";
+import { NEPQ_SYSTEM_PROMPT, AGENT_FIRST_MESSAGE } from "@/lib/nepq-prompt";
 
 /**
  * GET /api/agent/fix
  *
- * Forces the existing ElevenLabs agent to use built-in Claude Sonnet 4.6
- * instead of custom LLM. Visit this URL in your browser to fix the agent.
+ * Updates the ElevenLabs agent with latest prompt, TTS, and LLM config.
+ * Visit this URL in your browser to apply changes.
  */
 export async function GET() {
   const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
@@ -27,6 +27,7 @@ export async function GET() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: "Tiffany — NEPQ Sales Setter",
           conversation_config: {
             agent: {
               prompt: {
@@ -63,7 +64,9 @@ export async function GET() {
       status: "ok",
       agent_id: agentId,
       llm: "claude-sonnet-4-6",
-      message: "Agent updated to use built-in Claude Sonnet 4.6. Try starting a call now.",
+      tts: "eleven_flash_v2",
+      voice: "EXAVITQu4vr4xnSDxMaL (Sarah)",
+      message: "Agent updated. Test it in the ElevenLabs dashboard first, then try your app.",
     });
   } catch (error) {
     return NextResponse.json({

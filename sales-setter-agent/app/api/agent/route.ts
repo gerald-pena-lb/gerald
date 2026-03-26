@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { NEPQ_SYSTEM_PROMPT, AGENT_FIRST_MESSAGE, ELEVENLABS_VOICE_CONFIG } from "@/lib/nepq-prompt";
+import { NEPQ_SYSTEM_PROMPT, AGENT_FIRST_MESSAGE } from "@/lib/nepq-prompt";
 
 /**
  * POST /api/agent
@@ -55,12 +55,10 @@ export async function POST(req: NextRequest) {
           language: "en",
         },
         tts: {
-          model_id: ELEVENLABS_VOICE_CONFIG.modelId,
-          voice_id: process.env.ELEVENLABS_VOICE_ID || ELEVENLABS_VOICE_CONFIG.voiceId,
-          stability: ELEVENLABS_VOICE_CONFIG.stability,
-          similarity_boost: ELEVENLABS_VOICE_CONFIG.similarityBoost,
-          speed: ELEVENLABS_VOICE_CONFIG.speed,
-          optimize_streaming_latency: 3,
+          model_id: "eleven_flash_v2",
+          voice_id: process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL",
+          stability: 0.7,
+          similarity_boost: 0.75,
         },
         conversation: {
           max_duration_seconds: 1800, // 30 min max

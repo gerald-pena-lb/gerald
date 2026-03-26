@@ -1,81 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export default function HomePage() {
-  const [prospectName, setProspectName] = useState("");
-  const [teammateName, setTeammateName] = useState("");
+  const [ready, setReady] = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
-  const handleStart = () => {
-    if (!prospectName.trim() || !teammateName.trim()) return;
-    const params = new URLSearchParams({
-      prospect: prospectName.trim(),
-      teammate: teammateName.trim(),
-    });
-    window.location.href = `/call/session?${params.toString()}`;
-  };
+  // Load ElevenLabs widget script
+  useEffect(() => {
+    if (document.querySelector('script[src*="elevenlabs.io/convai-widget"]')) {
+      setReady(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://elevenlabs.io/convai-widget/index.js";
+    script.async = true;
+    script.onload = () => setReady(true);
+    document.body.appendChild(script);
+  }, []);
+
+  // Render widget
+  useEffect(() => {
+    if (!ready || !widgetRef.current) return;
+
+    const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+    if (!agentId) return;
+
+    widgetRef.current.innerHTML = "";
+    const widget = document.createElement("elevenlabs-convai");
+    widget.setAttribute("agent-id", agentId);
+    widgetRef.current.appendChild(widget);
+  }, [ready]);
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.card}>
+      <div style={styles.container}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Gerald</h1>
-          <p style={styles.subtitle}>Sales Setter Voice Agent</p>
+          <h1 style={styles.title}>Tiffany</h1>
+          <p style={styles.subtitle}>Book Publishing Strategy Call</p>
         </div>
 
-        <div style={styles.form}>
+        <div style={styles.card}>
           <p style={styles.description}>
-            Enter the prospect and teammate details to start the voice call.
-            The agent will follow the NEPQ framework to qualify the prospect
-            and book a strategy call with Alinka.
+            Click the microphone button to start your conversation with Tiffany.
+            She'll learn about your goals and help you explore the next steps
+            toward publishing your book.
           </p>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Prospect Name</label>
-            <input
-              type="text"
-              value={prospectName}
-              onChange={(e) => setProspectName(e.target.value)}
-              placeholder="e.g. John Smith"
-              style={styles.input}
-              onKeyDown={(e) => e.key === "Enter" && handleStart()}
-            />
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Teammate Name (LinkedIn outreach)</label>
-            <input
-              type="text"
-              value={teammateName}
-              onChange={(e) => setTeammateName(e.target.value)}
-              placeholder="e.g. Sarah"
-              style={styles.input}
-              onKeyDown={(e) => e.key === "Enter" && handleStart()}
-            />
-          </div>
-
-          <button
-            onClick={handleStart}
-            disabled={!prospectName.trim() || !teammateName.trim()}
-            style={{
-              ...styles.button,
-              ...(!prospectName.trim() || !teammateName.trim()
-                ? styles.buttonDisabled
-                : {}),
-            }}
-          >
-            Start Voice Call
-          </button>
+          <div ref={widgetRef} style={styles.widgetArea} />
         </div>
 
-        <div style={styles.footer}>
-          <h3 style={styles.footerTitle}>How it works</h3>
-          <ol style={styles.steps}>
-            <li>Your team connects with a prospect on LinkedIn</li>
-            <li>Prospect books a call and lands here</li>
-            <li>Gerald qualifies them using the NEPQ framework</li>
-            <li>Qualified prospects get booked with Alinka on Calendly</li>
-          </ol>
+        <div style={styles.infoPanel}>
+          <div style={styles.infoItem}>
+            <span style={styles.infoLabel}>Stages</span>
+            <span style={styles.infoValue}>
+              Connect &rarr; Situation &rarr; Problem &rarr; Consequence &rarr;
+              Wallet Test &rarr; Book Call
+            </span>
+          </div>
+          <div style={styles.infoItem}>
+            <span style={styles.infoLabel}>Goal</span>
+            <span style={styles.infoValue}>
+              Book qualified prospect onto strategy call with Alinka
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -90,16 +77,14 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     padding: "24px",
   },
-  card: {
+  container: {
+    maxWidth: "520px",
     width: "100%",
-    maxWidth: "480px",
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    border: "1px solid #e2e8f0",
-    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
   },
   header: {
-    padding: "32px 32px 0",
     textAlign: "center" as const,
   },
   title: {
@@ -116,71 +101,46 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "0.1em",
     fontWeight: 500,
   },
-  form: {
-    padding: "24px 32px",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "16px",
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: "16px",
+    border: "1px solid #e2e8f0",
+    padding: "24px",
+    textAlign: "center" as const,
   },
   description: {
     fontSize: "14px",
     color: "#718096",
     lineHeight: "1.6",
-    margin: 0,
+    margin: "0 0 16px",
   },
-  field: {
+  widgetArea: {
+    display: "flex",
+    justifyContent: "center",
+    minHeight: "80px",
+  },
+  infoPanel: {
+    backgroundColor: "#ffffff",
+    borderRadius: "12px",
+    border: "1px solid #e2e8f0",
+    padding: "16px 24px",
     display: "flex",
     flexDirection: "column" as const,
-    gap: "6px",
+    gap: "8px",
   },
-  label: {
+  infoItem: {
+    display: "flex",
+    gap: "12px",
     fontSize: "13px",
-    fontWeight: 600,
-    color: "#4a5568",
+    lineHeight: "1.5",
   },
-  input: {
-    padding: "10px 14px",
-    fontSize: "15px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    outline: "none",
-    transition: "border-color 0.2s",
-    color: "#1a202c",
-  },
-  button: {
-    marginTop: "8px",
-    padding: "12px 24px",
-    backgroundColor: "#1a1a2e",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "background-color 0.2s",
-  },
-  buttonDisabled: {
-    backgroundColor: "#cbd5e0",
-    cursor: "not-allowed",
-  },
-  footer: {
-    padding: "20px 32px",
-    borderTop: "1px solid #e2e8f0",
-    backgroundColor: "#f7f8fa",
-  },
-  footerTitle: {
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#4a5568",
-    margin: "0 0 8px",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
-  },
-  steps: {
-    paddingLeft: "18px",
-    margin: 0,
-    fontSize: "13px",
+  infoLabel: {
     color: "#718096",
-    lineHeight: "1.8",
+    fontWeight: 600,
+    minWidth: "60px",
+    flexShrink: 0,
+  },
+  infoValue: {
+    color: "#4a5568",
   },
 };
