@@ -40,8 +40,8 @@ export async function GET() {
               language: "en",
             },
             tts: {
-              model_id: "eleven_turbo_v2",
-              voice_id: "21m00Tcm4TlvDq8ikWAM",
+              model_id: "eleven_flash_v2_5",
+              voice_id: "EXAVITQu4vr4xnSDxMaL",
               stability: 0.7,
               similarity_boost: 0.75,
             },
