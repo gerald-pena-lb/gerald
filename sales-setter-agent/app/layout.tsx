@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Gerald — Book Publishing Strategy Call",
+  title: "Book Publishing Consultation",
   description:
-    "Speak with Gerald to explore how we can help you write and publish your book.",
+    "Speak with Tiffany to explore how we can help you write and publish your book.",
 };
 
 export default function RootLayout({
