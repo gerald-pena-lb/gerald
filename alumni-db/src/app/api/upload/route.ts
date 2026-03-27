@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import Papa from "papaparse";
 
 export async function POST(req: NextRequest) {
@@ -20,38 +20,31 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const db = getDb();
-  const stmt = db.prepare(`
-    INSERT INTO members (full_name, batch_name, batch_letter, year, phone_number, current_company, title, industry, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  const rows = (parsed.data as Record<string, string>[])
+    .filter((row) => row.full_name)
+    .map((row) => ({
+      full_name: row.full_name,
+      batch_name: row.batch_name || null,
+      batch_letter: row.batch_letter || null,
+      year: row.year ? Number(row.year) : null,
+      phone_number: row.phone_number || null,
+      current_company: row.current_company || null,
+      title: row.title || null,
+      industry: row.industry || null,
+      status: row.status || "alive",
+    }));
 
-  let count = 0;
+  const skipped = (parsed.data as Record<string, string>[]).length - rows.length;
   const errors: string[] = [];
+  if (skipped > 0) {
+    errors.push(`${skipped} row(s) skipped: missing full_name`);
+  }
 
-  const insertMany = db.transaction((rows: Record<string, string>[]) => {
-    for (const row of rows) {
-      if (!row.full_name) {
-        errors.push(`Row skipped: missing full_name`);
-        continue;
-      }
-      stmt.run(
-        row.full_name,
-        row.batch_name || null,
-        row.batch_letter || null,
-        row.year ? Number(row.year) : null,
-        row.phone_number || null,
-        row.current_company || null,
-        row.title || null,
-        row.industry || null,
-        row.status || "alive"
-      );
-      count++;
-    }
-  });
+  const { error } = await supabase.from("members").insert(rows);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  insertMany(parsed.data as Record<string, string>[]);
-  db.close();
-
-  return NextResponse.json({ success: true, imported: count, errors }, { status: 201 });
+  return NextResponse.json(
+    { success: true, imported: rows.length, errors },
+    { status: 201 }
+  );
 }
