@@ -63,6 +63,12 @@ interface AnalysisCategory {
   suggestion?: string;
 }
 
+interface AcceptedSuggestion {
+  stage: string;
+  suggestion: string;
+  acceptedAt: string;
+}
+
 interface AnalysisResult {
   overallScore: number;
   maxScore: number;
@@ -70,6 +76,8 @@ interface AnalysisResult {
   categories: AnalysisCategory[];
   coachingFlags?: string[];
   coaching: string;
+  acceptedSuggestions?: AcceptedSuggestion[];
+  discardedStages?: string[];
 }
 
 interface ChatMessage {
@@ -250,7 +258,13 @@ function TranscriptContext({ context }: { context: string }) {
   );
 }
 
-function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
+function StageFeedbackCard({ cat, onAccept, onDiscard, isAccepted, isDiscarded }: {
+  cat: AnalysisCategory;
+  onAccept?: () => void;
+  onDiscard?: () => void;
+  isAccepted?: boolean;
+  isDiscarded?: boolean;
+}) {
   const status = stageStatus(cat);
   const t = getStageThresholds(cat.maxScore, cat.name);
   const isRed = status === "red";
@@ -297,11 +311,32 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
         </div>
       )}
 
-      {/* Suggestion for red/amber */}
-      {cat.suggestion && (
-        <div style={{ background: COLORS.blueLight, padding: 12, borderRadius: 6, fontSize: 13, color: "#1e40af" }}>
-          <strong>Try this:</strong> &ldquo;{cat.suggestion}&rdquo;
+      {/* Suggestion with accept/discard */}
+      {cat.suggestion && !isDiscarded && (
+        <div style={{ background: isAccepted ? COLORS.greenLight : COLORS.blueLight, padding: 12, borderRadius: 6, fontSize: 13, color: isAccepted ? "#065f46" : "#1e40af", border: isAccepted ? `1px solid ${COLORS.green}` : "none" }}>
+          <div style={{ marginBottom: isAccepted ? 0 : 8 }}>
+            <strong>{isAccepted ? "Accepted: " : "Try this: "}</strong>&ldquo;{cat.suggestion}&rdquo;
+          </div>
+          {!isAccepted && onAccept && onDiscard && (
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button
+                onClick={onAccept}
+                style={{ padding: "5px 14px", borderRadius: 6, border: `1px solid ${COLORS.green}`, background: COLORS.greenLight, color: "#065f46", fontWeight: 600, fontSize: 12, cursor: "pointer" }}
+              >
+                Good suggestion
+              </button>
+              <button
+                onClick={onDiscard}
+                style={{ padding: "5px 14px", borderRadius: 6, border: `1px solid ${COLORS.border}`, background: COLORS.white, color: COLORS.textSecondary, fontWeight: 600, fontSize: 12, cursor: "pointer" }}
+              >
+                Discard
+              </button>
+            </div>
+          )}
         </div>
+      )}
+      {isDiscarded && (
+        <div style={{ fontSize: 12, color: COLORS.textSecondary, fontStyle: "italic" }}>Suggestion discarded</div>
       )}
 
       {/* Expandable transcript context */}
@@ -310,11 +345,28 @@ function StageFeedbackCard({ cat }: { cat: AnalysisCategory }) {
   );
 }
 
-function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
+function AnalysisReport({ analysis, onSuggestionAction }: { analysis: AnalysisResult; onSuggestionAction?: (stageName: string, action: "accept" | "discard") => void }) {
   const cats = analysis.categories || [];
+  const accepted = analysis.acceptedSuggestions || [];
+  const discarded = analysis.discardedStages || [];
   const redStages = cats.filter((c) => stageStatus(c) === "red");
   const amberStages = cats.filter((c) => stageStatus(c) === "amber");
   const greenStages = cats.filter((c) => stageStatus(c) === "green");
+
+  function renderCard(cat: AnalysisCategory, i: number) {
+    const isAccepted = accepted.some((a) => a.stage === cat.name);
+    const isDiscarded = discarded.includes(cat.name);
+    return (
+      <StageFeedbackCard
+        key={i}
+        cat={cat}
+        isAccepted={isAccepted}
+        isDiscarded={isDiscarded}
+        onAccept={onSuggestionAction ? () => onSuggestionAction(cat.name, "accept") : undefined}
+        onDiscard={onSuggestionAction ? () => onSuggestionAction(cat.name, "discard") : undefined}
+      />
+    );
+  }
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -350,7 +402,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.red }}>Critical — Needs Immediate Coaching</h3>
           <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are well below the pass threshold. Focus coaching here first.</div>
-          {redStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
+          {redStages.map((cat, i) => renderCard(cat, i))}
         </div>
       )}
 
@@ -359,7 +411,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.yellow }}>Almost There — Close to Passing</h3>
           <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages are close to the pass threshold but need refinement.</div>
-          {amberStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
+          {amberStages.map((cat, i) => renderCard(cat, i))}
         </div>
       )}
 
@@ -368,7 +420,7 @@ function AnalysisReport({ analysis }: { analysis: AnalysisResult }) {
         <div style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: COLORS.green }}>Strong — What Worked Well</h3>
           <div style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>These stages met or exceeded the pass threshold. Keep it up.</div>
-          {greenStages.map((cat, i) => <StageFeedbackCard key={i} cat={cat} />)}
+          {greenStages.map((cat, i) => renderCard(cat, i))}
         </div>
       )}
 
@@ -808,14 +860,81 @@ function PageInner() {
     }
   }
 
+  function getAllAcceptedSuggestions(): AcceptedSuggestion[] {
+    const all: AcceptedSuggestion[] = [];
+    data.agents.forEach((a) => {
+      a.calls.forEach((c) => {
+        if (c.analysis?.acceptedSuggestions) {
+          all.push(...c.analysis.acceptedSuggestions);
+        }
+      });
+    });
+    return all;
+  }
+
+  async function handleSuggestionAction(agentId: string, callId: string, stageName: string, action: "accept" | "discard") {
+    setData((prev) => ({
+      agents: prev.agents.map((a) =>
+        a.id === agentId
+          ? {
+              ...a,
+              calls: a.calls.map((c) => {
+                if (c.id !== callId || !c.analysis) return c;
+                const analysis = { ...c.analysis };
+                if (action === "accept") {
+                  const cat = analysis.categories?.find((cat) => cat.name === stageName);
+                  const accepted = analysis.acceptedSuggestions || [];
+                  analysis.acceptedSuggestions = [...accepted, {
+                    stage: stageName,
+                    suggestion: cat?.suggestion || "",
+                    acceptedAt: new Date().toISOString(),
+                  }];
+                } else {
+                  analysis.discardedStages = [...(analysis.discardedStages || []), stageName];
+                }
+                return { ...c, analysis };
+              }),
+            }
+          : a
+      ),
+    }));
+
+    // Persist to DB
+    const agent = data.agents.find((a) => a.id === agentId);
+    const call = agent?.calls.find((c) => c.id === callId);
+    if (call?.analysis) {
+      const updatedAnalysis = { ...call.analysis };
+      if (action === "accept") {
+        const cat = updatedAnalysis.categories?.find((cat) => cat.name === stageName);
+        updatedAnalysis.acceptedSuggestions = [...(updatedAnalysis.acceptedSuggestions || []), {
+          stage: stageName,
+          suggestion: cat?.suggestion || "",
+          acceptedAt: new Date().toISOString(),
+        }];
+      } else {
+        updatedAnalysis.discardedStages = [...(updatedAnalysis.discardedStages || []), stageName];
+      }
+      try {
+        await fetch("/api/calls", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: callId, analysis: updatedAnalysis }),
+        });
+      } catch (err) {
+        console.error("Failed to save suggestion action:", err);
+      }
+    }
+  }
+
   async function analyzeTranscript(transcript: string): Promise<AnalysisResult> {
+    const acceptedSuggestions = getAllAcceptedSuggestions();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
     try {
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ transcript, acceptedSuggestions }),
         signal: controller.signal,
       });
       const resData = await res.json();
@@ -1279,7 +1398,10 @@ function PageInner() {
                           {call.callDate ? `Call date: ${new Date(call.callDate + "T00:00:00").toLocaleDateString()}` : ""} | Agent: {selectedAgent.name}
                         </div>
                       </div>
-                      <AnalysisReport analysis={call.analysis} />
+                      <AnalysisReport
+                        analysis={call.analysis}
+                        onSuggestionAction={(stageName, action) => handleSuggestionAction(selectedAgent.id, call.id, stageName, action)}
+                      />
                     </div>
                   )}
                 </div>

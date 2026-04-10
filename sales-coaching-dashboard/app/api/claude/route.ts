@@ -117,6 +117,15 @@ Use this checklist as your guide for robust analysis. You MUST output:
   - Above 75% but below 90% (amber): Explain what was attempted, what fell short, and give specific actions/phrasing to improve
   - 90%+ (green/pass): Highlight what the agent did well with a transcript quote as evidence
 
+## SUGGESTION REQUIREMENTS
+For each stage that scores below 90%, generate a suggestion that:
+1. References what the PROSPECT actually said (their specific words, concerns, goals)
+2. References what the SETTER actually said (their exact approach that fell short)
+3. Provides a rewritten response that uses NEPQ principles and directly addresses what the prospect expressed
+4. Is a complete, natural-sounding phrase the setter could actually say in conversation — not a template with blanks
+
+The suggestion must feel like a real conversational response to THIS specific prospect, not a generic script. Use the prospect's name, their stated goals, their specific pain points, and their exact words when crafting the suggestion.
+
 IMPORTANT: Do NOT write "RED STAGE", "AMBER STAGE", "GREEN STAGE" or any color labels in the feedback text. Just describe what happened and what to improve. The UI handles color coding automatically based on the score.
 - Note any automatic coaching flags triggered
 - Give a detailed coaching recommendation
@@ -150,7 +159,7 @@ const ANALYSIS_TOOL = {
             transcriptQuote: { type: "string" as const, description: "Key transcript quote from this stage (under 25 words). For stages below pass threshold: what the agent said/didn't say. For passing stages: what the agent said that was effective." },
             transcriptContext: { type: "string" as const, description: "2-4 lines of surrounding transcript context with speaker labels" },
             feedback: { type: "string" as const, description: "For stages below pass threshold: Explain which specific criteria scored 0 or 1, what was NOT done, and how to improve. For stages at/above pass threshold: Why this was effective from an NEPQ perspective. Never use color labels like RED/AMBER/GREEN." },
-            suggestion: { type: "string" as const, description: "For stages below pass threshold: A specific example phrase the agent should use next time. For passing stages: leave empty string." },
+            suggestion: { type: "string" as const, description: "For stages below 90%: A specific, context-aware phrase the setter should say next time. Must reference what the prospect actually said (their goals, pain, exact words) and rewrite the setter's approach using NEPQ principles. Should sound natural and conversational, not generic. For passing stages: leave empty string." },
           },
         },
       },
@@ -173,12 +182,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { transcript } = await req.json();
+    const { transcript, acceptedSuggestions } = await req.json();
     if (!transcript) {
       return NextResponse.json({ error: "No transcript provided" }, { status: 400 });
     }
 
     const trimmed = transcript.slice(0, 12000);
+
+    // Build context from previously accepted suggestions
+    let acceptedContext = "";
+    if (acceptedSuggestions && acceptedSuggestions.length > 0) {
+      acceptedContext = `\n\nPREVIOUSLY ACCEPTED COACHING SUGGESTIONS (the team has validated these as effective — incorporate similar approaches when relevant):\n${acceptedSuggestions.map((s: { stage: string; suggestion: string }) => `- [${s.stage}]: "${s.suggestion}"`).join("\n")}\n`;
+    }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120000);
 
@@ -200,7 +215,7 @@ export async function POST(req: NextRequest) {
           messages: [
             {
               role: "user",
-              content: `Analyze this sales call transcript using the NEPQ framework. Use the submit_analysis tool to return your analysis.\n\n${trimmed}`,
+              content: `Analyze this sales call transcript using the NEPQ framework. Use the submit_analysis tool to return your analysis.${acceptedContext}\n\nTRANSCRIPT:\n${trimmed}`,
             },
           ],
         }),

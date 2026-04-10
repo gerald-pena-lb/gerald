@@ -37,16 +37,24 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// PATCH /api/calls — update outcome
+// PATCH /api/calls — update outcome or analysis
 export async function PATCH(req: NextRequest) {
-  const { id, outcome } = await req.json();
+  const { id, outcome, analysis } = await req.json();
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
+  const updates: Record<string, unknown> = {};
+  if (outcome !== undefined) updates.outcome = outcome;
+  if (analysis !== undefined) updates.analysis = analysis;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
+
   const { error } = await getSupabase()
     .from("calls")
-    .update({ outcome })
+    .update(updates)
     .eq("id", id);
 
   if (error) {
